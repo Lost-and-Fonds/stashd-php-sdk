@@ -28,6 +28,7 @@ final class InputPluginServer
         $plugin = ($this->factory)($this->context());
         while (($message = RuntimeFrameCodec::read(STDIN, 3600.0)) !== null) {
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
+
             try {
                 $result = $this->dispatch($plugin, (string) ($message['method'] ?? ''), is_array($message['params'] ?? null) ? $message['params'] : []);
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
@@ -68,6 +69,7 @@ final class InputPluginServer
 
                 return is_array($message['result'] ?? null) ? $message['result'] : [];
             }
+
             throw new \RuntimeException('host closed capability channel');
         };
 

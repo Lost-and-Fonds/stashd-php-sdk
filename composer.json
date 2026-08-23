@@ -21,7 +21,8 @@
   "scripts": {
     "test": "vendor/bin/pest",
     "test:static": "vendor/bin/phpstan analyse",
-    "lint": ["composer dump-autoload --optimize --strict-psr --dry-run", "vendor/bin/php-cs-fixer check --config=.php-cs-fixer.dist.php"]
+    "format": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php",
+    "lint": ["composer dump-autoload --optimize --strict-psr --dry-run", "vendor/bin/php-cs-fixer check --allow-risky=yes --config=.php-cs-fixer.dist.php"]
   },
   "repositories": [{"type": "vcs", "url": "https://github.com/Lost-and-Fonds/plugin-api.git"}],
   "config": {"allow-plugins": {"pestphp/pest-plugin": true}}

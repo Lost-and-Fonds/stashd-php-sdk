@@ -28,6 +28,7 @@ final class OptionValue
     {
         $tag = $value['tag'] ?? null;
         $raw = $value['value'] ?? null;
+
         return match ($tag) {
             'boolean' => self::boolean((bool) $raw),
             'number' => self::number((int) $raw),

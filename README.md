@@ -20,4 +20,4 @@ and progress capabilities to Input providers. `StagedArtifact::role` carries
 generic primary, metadata, artwork, and caption roles without provider types.
 
 See `examples/minimal-broadcast/` for the smallest complete plugin shape. Run
-the SDK checks with `./tests/run.sh`.
+the SDK checks with `composer test`.

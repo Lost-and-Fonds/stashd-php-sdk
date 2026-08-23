@@ -81,6 +81,7 @@ final class WireMapper
     public static function publicationFromWire(array $data): Publication
     {
         $artifact = is_array($data['artifact'] ?? null) ? $data['artifact'] : [];
+
         return new Publication(
             new Artifact((string) ($artifact['reference'] ?? ''), isset($artifact['media-type']) ? (string) $artifact['media-type'] : null, (int) ($artifact['size-bytes'] ?? 0)),
             array_map(static fn(array $file): PublishedFile => new PublishedFile((string) ($file['item-id'] ?? ''), (string) ($file['source-reference'] ?? ''), (string) ($file['relative-path'] ?? '')), self::listOfArrays($data['files'] ?? [])),
@@ -129,6 +130,7 @@ final class WireMapper
     {
         return array_map(static function (array $setting): Setting {
             $value = is_array($setting['value'] ?? null) ? $setting['value'] : [];
+
             return new Setting((string) ($setting['key'] ?? ''), OptionValue::fromWire($value));
         }, self::listOfArrays($values));
     }
@@ -139,6 +141,7 @@ final class WireMapper
         if (! is_array($values)) {
             return [];
         }
+
         return array_values(array_filter($values, static fn(mixed $value): bool => is_array($value)));
     }
 

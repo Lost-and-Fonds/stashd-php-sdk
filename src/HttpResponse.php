@@ -26,6 +26,7 @@ final readonly class HttpResponse
         if ($this->inlineBody !== null) {
             return $this->inlineBody;
         }
+
         throw new RuntimeException('response body is an opaque resource');
     }
 }
