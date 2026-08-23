@@ -14,5 +14,10 @@ PSR-4 autoloading keeps the package usable without a framework or service
 container. The plugin runner mounts this package read-only as `/sdk` for an
 invocation; an entrypoint only needs to require `/sdk/bootstrap.php`.
 
+Broadcast and Input entrypoints use the same framed runtime boundary;
+`Runtime\InputPluginServer` supplies HTTP, credential, helper, staging, log,
+and progress capabilities to Input providers. `StagedArtifact::role` carries
+generic primary, metadata, artwork, and caption roles without provider types.
+
 See `examples/minimal-broadcast/` for the smallest complete plugin shape. Run
 the SDK checks with `./tests/run.sh`.
