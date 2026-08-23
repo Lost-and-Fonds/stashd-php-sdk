@@ -43,9 +43,9 @@ final class NativePluginServer
     {
         $context = $this->context();
         return match ($method) {
-            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest($params, $context->staging))),
-            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest($params, $context->staging))),
-            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest($params['request'] ?? $params, $context->staging), $this->publication($params['publication'] ?? [])), $context)),
+            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest($params, $context->staging, $context->helpers))),
+            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest($params, $context->staging, $context->helpers))),
+            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest($params['request'] ?? $params, $context->staging, $context->helpers), $this->publication($params['publication'] ?? [])), $context)),
             'broadcast.operation' => WireMapper::operationResult($this->broadcast->operation($this->operationRequest($params), $context)),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
@@ -76,9 +76,9 @@ final class NativePluginServer
     }
 
     /** @param array<string,mixed> $data */
-    private function publishRequest(array $data, ?StagingArea $staging = null): PublishRequest
+    private function publishRequest(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null): PublishRequest
     {
-        return WireMapper::publishRequestFromWire($data, $staging);
+        return WireMapper::publishRequestFromWire($data, $staging, $helpers);
     }
 
     /** @param array<string,mixed> $data */
