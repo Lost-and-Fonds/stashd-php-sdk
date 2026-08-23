@@ -1,6 +1,6 @@
 # Stashd plugin SDK
 
-This package is the author-facing PHP 8.5 surface for plugin Stashd plugins. It
+This package is the author-facing PHP 8.5 surface for Stashd plugins. It
 contains only contract DTOs, lifecycle interfaces, capability interfaces, plugin
 RPC bootstrap, and wire mapping. The canonical contract is published separately
 as `stashd/plugin-api`; this package implements that authoring surface.
