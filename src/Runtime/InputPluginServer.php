@@ -32,7 +32,11 @@ final class InputPluginServer
                 $result = $this->dispatch($plugin, (string) ($message['method'] ?? ''), is_array($message['params'] ?? null) ? $message['params'] : []);
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
             } catch (Throwable $exception) {
-                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => 'plugin-failure', 'message' => $exception->getMessage(), 'retryable' => false]]);
+                $message = $exception->getMessage();
+                $lower = strtolower($message);
+                $code = str_contains($lower, 'unsupported') ? 'unsupported' : (str_contains($lower, 'not found') ? 'not-found' : (str_contains($lower, 'rate') ? 'rate-limited' : (str_contains($lower, 'auth') ? 'authentication' : (str_contains($lower, 'unavailable') ? 'unavailable' : 'failed'))));
+                $retryable = in_array($code, ['rate-limited', 'unavailable', 'failed'], true);
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => $code, 'message' => $message, 'retryable' => $retryable]]);
             }
         }
         exit(0);
