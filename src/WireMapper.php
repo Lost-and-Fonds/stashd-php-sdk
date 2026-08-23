@@ -40,7 +40,7 @@ final class WireMapper
             throw new InvalidPluginResultException('staging did not return an artifact');
         }
 
-        return ['reference' => $artifact->reference, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes];
+        return ['reference' => $artifact->reference, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes, 'role' => $artifact->role];
     }
 
     /** @param array<string, mixed> $data */
@@ -100,6 +100,28 @@ final class WireMapper
     public static function operationResult(OperationResult $result): array
     {
         return ['choices' => array_map(static fn(Choice $choice): array => ['value' => $choice->value, 'label' => $choice->label], $result->choices), 'values' => array_map([self::class, 'setting'], $result->values)];
+    }
+
+    public static function resolvedInput(ResolvedInput $input): array
+    {
+        return ['id' => $input->id, 'canonical-reference' => $input->canonicalReference, 'kind' => $input->kind, 'title' => $input->title, 'artwork-reference' => $input->artworkReference, 'estimated-item-count' => $input->estimatedItemCount];
+    }
+
+    /** @param list<DiscoveredItem> $items */
+    public static function discoveredItems(array $items): array
+    {
+        return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind], $items);
+    }
+
+    public static function acquisition(AcquisitionResult $result): array
+    {
+        return ['artifacts' => array_map([self::class, 'stagedArtifact'], $result->artifacts)];
+    }
+
+    /** @param array<string,mixed> $item */
+    public static function discoveredItemFromWire(array $item): DiscoveredItem
+    {
+        return new DiscoveredItem((string) ($item['id'] ?? ''), (string) ($item['reference'] ?? ''), (string) ($item['title'] ?? ''), isset($item['description']) ? (string) $item['description'] : null, isset($item['published-at']) ? (string) $item['published-at'] : null, isset($item['artwork-reference']) ? (string) $item['artwork-reference'] : null, isset($item['duration-seconds']) ? (int) $item['duration-seconds'] : null, isset($item['kind']) ? (string) $item['kind'] : null);
     }
 
     /** @param mixed $values @return list<Setting> */
