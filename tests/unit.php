@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-foreach (['BroadcastPlugin.php', 'InputPlugin.php', 'Logger.php', 'ProgressReporter.php', 'ReadableResource.php', 'HttpClient.php', 'StagingArea.php'] as $interface) {
+foreach (['BroadcastPlugin.php', 'InputPlugin.php', 'Logger.php', 'ProgressReporter.php', 'ReadableResource.php', 'HttpClient.php', 'StagingArea.php', 'HelperRunner.php'] as $interface) {
     require_once __DIR__ . '/../src/' . $interface;
 }
 

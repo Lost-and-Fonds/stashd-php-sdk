@@ -70,7 +70,9 @@ final class NativePluginServer
             throw new \RuntimeException('host closed capability channel');
         };
 
-        return new PluginContext(new NativeLogger($call), new NativeProgressReporter($call), new NativeHttpClient($call), new NativeStagingArea($call));
+        $helpers = new NativeHelperRunner($call);
+
+        return new PluginContext(new NativeLogger($call), new NativeProgressReporter($call), new NativeHttpClient($call), new NativeStagingArea($call), $helpers);
     }
 
     /** @param array<string,mixed> $data */

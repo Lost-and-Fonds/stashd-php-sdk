@@ -11,5 +11,6 @@ final readonly class PluginContext
         public ProgressReporter $progress = new NullProgressReporter(),
         public HttpClient $http = new UnavailableHttpClient(),
         public ?StagingArea $staging = null,
+        public ?HelperRunner $helpers = null,
     ) {}
 }
