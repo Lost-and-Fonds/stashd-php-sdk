@@ -30,6 +30,7 @@ it('passes the SDK conformance checks', function (): void {
     }
     $failure = new PluginFailure(PluginErrorCode::Unavailable, new PluginError('temporary fixture failure', true));
     $wireFailure = WireMapper::pluginFailure($failure);
+
     if (! is_array($wireFailure['value'] ?? null) || ($wireFailure['value']['retryable'] ?? null) !== true) {
         throw new RuntimeException('SDK retryability mapping failed');
     }
@@ -50,6 +51,7 @@ it('passes the SDK conformance checks', function (): void {
     }
     $contextReflection = new ReflectionClass(PluginContext::class);
     $contextSource = (string) file_get_contents((string) $contextReflection->getFileName());
+
     if (str_contains($contextSource, 'bubblewrap') || str_contains($contextSource, 'FrameCodec')) {
         throw new RuntimeException('sandbox/RPC mechanics leaked into SDK context');
     }

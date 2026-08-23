@@ -28,6 +28,7 @@ final class PluginServer
     {
         RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => []]);
         RuntimeFrameCodec::read(STDIN, 30.0);
+
         while (($message = RuntimeFrameCodec::read(STDIN, 3600.0)) !== null) {
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
 
@@ -60,10 +61,12 @@ final class PluginServer
             static $next = 1;
             $id = 'sdk-' . $next++;
             RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
+
             while (($message = RuntimeFrameCodec::read(STDIN, 30.0)) !== null) {
                 if (($message['id'] ?? null) !== $id) {
                     continue;
                 }
+
                 if (isset($message['error'])) {
                     throw new \RuntimeException((string) (($message['error']['message'] ?? null) ?: 'capability failed'));
                 }

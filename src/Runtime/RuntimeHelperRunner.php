@@ -18,6 +18,7 @@ final readonly class RuntimeHelperRunner implements HelperRunner
     public function run(string $name, array $arguments = []): HelperResult
     {
         $result = ($this->call)('helper.run', ['name' => $name, 'arguments' => $arguments]);
+
         if (! is_int($result['exit_code'] ?? null)) {
             throw new RuntimeException('Plugin helper returned an invalid exit code.');
         }

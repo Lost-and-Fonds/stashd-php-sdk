@@ -26,6 +26,7 @@ final class InputPluginServer
         RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => []]);
         RuntimeFrameCodec::read(STDIN, 30.0);
         $plugin = ($this->factory)($this->context());
+
         while (($message = RuntimeFrameCodec::read(STDIN, 3600.0)) !== null) {
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
 
@@ -59,10 +60,12 @@ final class InputPluginServer
             static $next = 1;
             $id = 'sdk-' . $next++;
             RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
+
             while (($message = RuntimeFrameCodec::read(STDIN, 30.0)) !== null) {
                 if (($message['id'] ?? null) !== $id) {
                     continue;
                 }
+
                 if (isset($message['error'])) {
                     throw new \RuntimeException((string) (($message['error']['message'] ?? null) ?: 'capability failed'));
                 }
@@ -83,6 +86,7 @@ final class InputPluginServer
             return [];
         }
         $options = [];
+
         foreach ($values as $value) {
             if (! is_array($value) || ! is_string($value['key'] ?? null)) {
                 continue;
