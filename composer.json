@@ -1,6 +1,6 @@
 {
   "name": "stashd/plugin-sdk",
-  "description": "Independent PHP SDK for Stashd native plugins",
+  "description": "Independent PHP SDK for Stashd plugins",
   "type": "library",
   "license": "MIT",
   "require": {

@@ -1,7 +1,7 @@
-# Stashd native plugin SDK
+# Stashd plugin SDK
 
-This package is the author-facing PHP 8.5 surface for native Stashd plugins. It
-contains only contract DTOs, lifecycle interfaces, capability interfaces, native
+This package is the author-facing PHP 8.5 surface for plugin Stashd plugins. It
+contains only contract DTOs, lifecycle interfaces, capability interfaces, plugin
 RPC bootstrap, and wire mapping. The canonical contract is published separately
 as `stashd/plugin-api`; this package implements that authoring surface.
 
@@ -11,7 +11,7 @@ remain runtime concerns outside this package.
 
 The package is independently versionable and requires PHP 8.5 or newer. Its
 PSR-4 autoloading keeps the package usable without a framework or service
-container. The native runner mounts this package read-only as `/sdk` for an
+container. The plugin runner mounts this package read-only as `/sdk` for an
 invocation; an entrypoint only needs to require `/sdk/bootstrap.php`.
 
 See `examples/minimal-broadcast/` for the smallest complete plugin shape. Run

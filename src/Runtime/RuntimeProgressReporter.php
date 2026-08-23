@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Stashd\PluginSdk\Native;
+namespace Stashd\PluginSdk\Runtime;
 
 use Closure;
 use Stashd\PluginSdk\ProgressReporter;
 
-final readonly class NativeProgressReporter implements ProgressReporter
+final readonly class RuntimeProgressReporter implements ProgressReporter
 {
     /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
     public function __construct(private Closure $call) {}

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Stashd\PluginSdk\Native;
+namespace Stashd\PluginSdk\Runtime;
 
 use Closure;
 use RuntimeException;
 use Stashd\PluginSdk\StagedArtifact;
 use Stashd\PluginSdk\StagingArea;
 
-final readonly class NativeStagingArea implements StagingArea
+final readonly class RuntimeStagingArea implements StagingArea
 {
     /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
     public function __construct(private Closure $call) {}
@@ -37,7 +37,7 @@ final readonly class NativeStagingArea implements StagingArea
     private function artifact(array $result, string $relativePath): StagedArtifact
     {
         if (! is_string($result['reference'] ?? null)) {
-            throw new RuntimeException('Native staging returned an invalid artifact.');
+            throw new RuntimeException('Plugin staging returned an invalid artifact.');
         }
 
         return new StagedArtifact(

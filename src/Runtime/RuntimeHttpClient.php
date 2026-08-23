@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Stashd\PluginSdk\Native;
+namespace Stashd\PluginSdk\Runtime;
 
 use Closure;
 use Stashd\PluginSdk\HttpClient;
 use Stashd\PluginSdk\HttpResponse;
 
-final readonly class NativeHttpClient implements HttpClient
+final readonly class RuntimeHttpClient implements HttpClient
 {
     /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
     public function __construct(private Closure $call) {}
@@ -20,7 +20,7 @@ final readonly class NativeHttpClient implements HttpClient
             'body' => $body, 'credential' => $credential,
         ]);
         $resource = isset($result['resource']) && is_string($result['resource'])
-            ? new NativeReadableResource($this->call, $result['resource'])
+            ? new RuntimeReadableResource($this->call, $result['resource'])
             : null;
 
         return new HttpResponse(

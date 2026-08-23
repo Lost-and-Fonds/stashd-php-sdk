@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Stashd\PluginSdk\Native;
+namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\BroadcastPlugin;
 use Stashd\PluginSdk\FinalizationRequest;
+use Stashd\PluginSdk\HelperRunner;
 use Stashd\PluginSdk\Item;
 use Stashd\PluginSdk\ItemResource;
 use Stashd\PluginSdk\OperationRequest;
@@ -19,21 +20,21 @@ use Stashd\PluginSdk\StagingArea;
 use Stashd\PluginSdk\WireMapper;
 use Throwable;
 
-final class NativePluginServer
+final class PluginServer
 {
     public function __construct(private BroadcastPlugin $broadcast) {}
 
     public function run(): never
     {
-        NativeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => []]);
-        NativeFrameCodec::read(STDIN, 30.0);
-        while (($message = NativeFrameCodec::read(STDIN, 3600.0)) !== null) {
+        RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => []]);
+        RuntimeFrameCodec::read(STDIN, 30.0);
+        while (($message = RuntimeFrameCodec::read(STDIN, 3600.0)) !== null) {
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
             try {
                 $result = $this->dispatch((string) ($message['method'] ?? ''), is_array($message['params'] ?? null) ? $message['params'] : []);
-                NativeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
             } catch (Throwable $exception) {
-                NativeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => 'plugin-failure', 'message' => $exception->getMessage(), 'retryable' => false]]);
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => 'plugin-failure', 'message' => $exception->getMessage(), 'retryable' => false]]);
             }
         }
         exit(0);
@@ -56,8 +57,8 @@ final class NativePluginServer
         $call = function (string $method, array $params): array {
             static $next = 1;
             $id = 'sdk-' . $next++;
-            NativeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
-            while (($message = NativeFrameCodec::read(STDIN, 30.0)) !== null) {
+            RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
+            while (($message = RuntimeFrameCodec::read(STDIN, 30.0)) !== null) {
                 if (($message['id'] ?? null) !== $id) {
                     continue;
                 }
@@ -70,9 +71,9 @@ final class NativePluginServer
             throw new \RuntimeException('host closed capability channel');
         };
 
-        $helpers = new NativeHelperRunner($call);
+        $helpers = new RuntimeHelperRunner($call);
 
-        return new PluginContext(new NativeLogger($call), new NativeProgressReporter($call), new NativeHttpClient($call), new NativeStagingArea($call), $helpers);
+        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers);
     }
 
     /** @param array<string,mixed> $data */

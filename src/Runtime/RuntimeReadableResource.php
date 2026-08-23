@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Stashd\PluginSdk\Native;
+namespace Stashd\PluginSdk\Runtime;
 
 use Closure;
 use Stashd\PluginSdk\ReadableResource;
 
-final class NativeReadableResource implements ReadableResource
+final class RuntimeReadableResource implements ReadableResource
 {
     private bool $eof = false;
 
