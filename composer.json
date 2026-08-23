@@ -3,7 +3,10 @@
   "description": "Independent PHP SDK for Stashd native plugins",
   "type": "library",
   "license": "MIT",
-  "require": {"php": ">=8.5"},
+  "require": {
+    "php": "^8.5",
+    "stashd/plugin-api": "^0.1"
+  },
   "autoload": {
     "psr-4": {
       "Stashd\\PluginSdk\\": "src/"
