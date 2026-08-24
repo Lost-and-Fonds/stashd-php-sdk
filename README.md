@@ -1,4 +1,4 @@
-# Stashd plugin SDK
+# Stashd PHP SDK
 
 This package is the author-facing PHP 8.5 surface for Stashd plugins. It
 contains only contract DTOs, lifecycle interfaces, capability interfaces, plugin
