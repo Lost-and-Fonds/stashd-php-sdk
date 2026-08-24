@@ -108,6 +108,31 @@ final class WireMapper
         return ['id' => $input->id, 'canonical-reference' => $input->canonicalReference, 'kind' => $input->kind, 'title' => $input->title, 'artwork-reference' => $input->artworkReference, 'estimated-item-count' => $input->estimatedItemCount];
     }
 
+    public static function sourceDescriptor(SourceDescriptor $source): array
+    {
+        return array_map(
+            static fn(string $key, OptionValue $value): array => ['key' => $key, 'value' => $value->toWire()],
+            array_keys($source->values),
+            $source->values,
+        );
+    }
+
+    public static function sourceDescriptorFromWire(mixed $values): SourceDescriptor
+    {
+        $source = [];
+
+        foreach (self::listOfArrays($values) as $value) {
+            $key = $value['key'] ?? null;
+            $encoded = $value['value'] ?? null;
+
+            if (is_string($key) && is_array($encoded)) {
+                $source[$key] = OptionValue::fromWire($encoded);
+            }
+        }
+
+        return new SourceDescriptor($source);
+    }
+
     /** @param list<DiscoveredItem> $items */
     public static function discoveredItems(array $items): array
     {

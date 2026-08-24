@@ -47,7 +47,7 @@ final class InputPluginServer
     private function dispatch(InputPlugin $plugin, string $method, array $params): array
     {
         return match ($method) {
-            'input.resolve' => WireMapper::resolvedInput($plugin->resolve((string) ($params['source'] ?? ''))),
+            'input.resolve' => WireMapper::resolvedInput($plugin->resolve(WireMapper::sourceDescriptorFromWire($params['source'] ?? []))),
             'input.discover' => WireMapper::discoveredItems($plugin->discover((string) ($params['input_id'] ?? ''), DiscoveryIntent::from((string) ($params['intent'] ?? 'refresh')), $this->options($params['options'] ?? []))),
             'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(is_array($params['item'] ?? null) ? $params['item'] : []), new AcquisitionOptions(MediaKind::from((string) ($params['media_kind'] ?? 'video')), $this->options($params['options'] ?? [])))),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),

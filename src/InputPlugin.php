@@ -6,7 +6,7 @@ namespace Stashd\PluginSdk;
 
 interface InputPlugin
 {
-    public function resolve(string $source): ResolvedInput;
+    public function resolve(SourceDescriptor $source): ResolvedInput;
 
     /**
      * @param  list<InputOption>  $options
