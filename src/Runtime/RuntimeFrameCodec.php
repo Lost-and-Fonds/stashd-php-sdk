@@ -13,6 +13,7 @@ final class RuntimeFrameCodec
     {
         $payload = json_encode($message, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $frame = pack('N', strlen($payload)) . $payload;
+
         $written = fwrite($stream, $frame);
 
         if ($written !== strlen($frame)) {
@@ -36,7 +37,7 @@ final class RuntimeFrameCodec
         }
         $length = unpack('Nlength', $header)['length'];
 
-        if ($length < 2 || $length > 65536) {
+        if ($length < 2 || $length > 8_388_608) {
             throw new RuntimeException('plugin IPC frame is outside the size limit');
         }
         $payload = self::readBytes($stream, $length, $deadline);
