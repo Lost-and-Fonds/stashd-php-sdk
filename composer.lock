@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bbb48243909f374326be2993f7bc259f",
+    "content-hash": "b8d76fc40ff88971eae1575c4df5d46a",
     "packages": [
         {
             "name": "stashd/plugin-api",
