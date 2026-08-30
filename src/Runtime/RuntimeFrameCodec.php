@@ -71,7 +71,7 @@ final class RuntimeFrameCodec
             if (stream_select($read, $write, $except, $seconds, $microseconds) === 0) {
                 throw new RuntimeException('plugin IPC read timed out');
             }
-            $chunk = fread($stream, $length - strlen($result));
+            $chunk = fread($stream, min(65_536, $length - strlen($result)));
 
             if ($chunk === false || $chunk === '') {
                 return $result;
@@ -89,7 +89,7 @@ final class RuntimeFrameCodec
         $length = strlen($data);
 
         while ($offset < $length) {
-            $written = fwrite($stream, substr($data, $offset));
+            $written = fwrite($stream, substr($data, $offset, 65_536));
 
             if (! is_int($written) || $written <= 0) {
                 throw new RuntimeException('plugin IPC write failed');
