@@ -8,17 +8,16 @@ use RuntimeException;
 
 final class RuntimeFrameCodec
 {
+    private const MAX_FRAME_BYTES = 268_435_456;
+
     /** @param resource $stream */
     public static function write($stream, array $message): void
     {
         $payload = json_encode($message, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         $frame = pack('N', strlen($payload)) . $payload;
 
-        $written = fwrite($stream, $frame);
+        self::writeAll($stream, $frame);
 
-        if ($written !== strlen($frame)) {
-            throw new RuntimeException('plugin IPC write failed');
-        }
         fflush($stream);
     }
 
@@ -37,7 +36,7 @@ final class RuntimeFrameCodec
         }
         $length = unpack('Nlength', $header)['length'];
 
-        if ($length < 2 || $length > 8_388_608) {
+        if ($length < 2 || $length > self::MAX_FRAME_BYTES) {
             throw new RuntimeException('plugin IPC frame is outside the size limit');
         }
         $payload = self::readBytes($stream, $length, $deadline);
@@ -81,5 +80,22 @@ final class RuntimeFrameCodec
         }
 
         return $result;
+    }
+
+    /** @param resource $stream */
+    private static function writeAll($stream, string $data): void
+    {
+        $offset = 0;
+        $length = strlen($data);
+
+        while ($offset < $length) {
+            $written = fwrite($stream, substr($data, $offset));
+
+            if (! is_int($written) || $written <= 0) {
+                throw new RuntimeException('plugin IPC write failed');
+            }
+
+            $offset += $written;
+        }
     }
 }
