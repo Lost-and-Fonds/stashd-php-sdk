@@ -62,7 +62,7 @@ final class PluginServer
             $id = 'sdk-' . $next++;
             RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
 
-            while (($message = RuntimeFrameCodec::read(STDIN, 30.0)) !== null) {
+            while (($message = RuntimeFrameCodec::read(STDIN, 300.0)) !== null) {
                 if (($message['id'] ?? null) !== $id) {
                     continue;
                 }
