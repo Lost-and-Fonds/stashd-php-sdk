@@ -13,5 +13,7 @@ final readonly class ResolvedInput
         public ?string $title = null,
         public ?string $artworkReference = null,
         public ?int $estimatedItemCount = null,
+        public ?int $sizeBytes = null,
+        public bool $sizeEstimated = false,
     ) {}
 }

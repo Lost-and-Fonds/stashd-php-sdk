@@ -15,5 +15,7 @@ final readonly class DiscoveredItem
         public ?string $artworkReference = null,
         public ?int $durationSeconds = null,
         public ?string $kind = null,
+        public ?int $sizeBytes = null,
+        public bool $sizeEstimated = false,
     ) {}
 }

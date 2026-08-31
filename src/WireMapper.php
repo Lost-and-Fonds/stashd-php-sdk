@@ -105,7 +105,7 @@ final class WireMapper
 
     public static function resolvedInput(ResolvedInput $input): array
     {
-        return ['id' => $input->id, 'canonical-reference' => $input->canonicalReference, 'kind' => $input->kind, 'title' => $input->title, 'artwork-reference' => $input->artworkReference, 'estimated-item-count' => $input->estimatedItemCount];
+        return ['id' => $input->id, 'canonical-reference' => $input->canonicalReference, 'kind' => $input->kind, 'title' => $input->title, 'artwork-reference' => $input->artworkReference, 'estimated-item-count' => $input->estimatedItemCount, 'size-bytes' => $input->sizeBytes, 'size-estimated' => $input->sizeEstimated];
     }
 
     public static function sourceDescriptor(SourceDescriptor $source): array
@@ -136,7 +136,7 @@ final class WireMapper
     /** @param list<DiscoveredItem> $items */
     public static function discoveredItems(array $items): array
     {
-        return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind], $items);
+        return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated], $items);
     }
 
     public static function acquisition(AcquisitionResult $result): array
@@ -147,7 +147,7 @@ final class WireMapper
     /** @param array<string,mixed> $item */
     public static function discoveredItemFromWire(array $item): DiscoveredItem
     {
-        return new DiscoveredItem((string) ($item['id'] ?? ''), (string) ($item['reference'] ?? ''), (string) ($item['title'] ?? ''), isset($item['description']) ? (string) $item['description'] : null, isset($item['published-at']) ? (string) $item['published-at'] : null, isset($item['artwork-reference']) ? (string) $item['artwork-reference'] : null, isset($item['duration-seconds']) ? (int) $item['duration-seconds'] : null, isset($item['kind']) ? (string) $item['kind'] : null);
+        return new DiscoveredItem((string) ($item['id'] ?? ''), (string) ($item['reference'] ?? ''), (string) ($item['title'] ?? ''), isset($item['description']) ? (string) $item['description'] : null, isset($item['published-at']) ? (string) $item['published-at'] : null, isset($item['artwork-reference']) ? (string) $item['artwork-reference'] : null, isset($item['duration-seconds']) ? (int) $item['duration-seconds'] : null, isset($item['kind']) ? (string) $item['kind'] : null, isset($item['size-bytes']) ? (int) $item['size-bytes'] : null, (bool) ($item['size-estimated'] ?? false));
     }
 
     /** @param mixed $values @return list<Setting> */
