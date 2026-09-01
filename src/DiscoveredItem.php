@@ -17,5 +17,6 @@ final readonly class DiscoveredItem
         public ?string $kind = null,
         public ?int $sizeBytes = null,
         public bool $sizeEstimated = false,
+        public ?string $upstreamState = null,
     ) {}
 }

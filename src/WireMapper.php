@@ -145,7 +145,7 @@ final class WireMapper
      */
     public static function discoveredItems(array $items): array
     {
-        return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated], $items);
+        return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated, 'upstream-state' => $item->upstreamState], $items);
     }
 
     /** @return array<string,mixed> */
@@ -157,7 +157,7 @@ final class WireMapper
     /** @param array<string, mixed> $item */
     public static function discoveredItemFromWire(array $item): DiscoveredItem
     {
-        return new DiscoveredItem(self::stringValue($item['id'] ?? null), self::stringValue($item['reference'] ?? null), self::stringValue($item['title'] ?? null), isset($item['description']) ? self::stringValue($item['description']) : null, isset($item['published-at']) ? self::stringValue($item['published-at']) : null, isset($item['artwork-reference']) ? self::stringValue($item['artwork-reference']) : null, isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null, isset($item['kind']) ? self::stringValue($item['kind']) : null, isset($item['size-bytes']) ? self::intValue($item['size-bytes']) : null, is_bool($item['size-estimated'] ?? null) ? $item['size-estimated'] : false);
+        return new DiscoveredItem(self::stringValue($item['id'] ?? null), self::stringValue($item['reference'] ?? null), self::stringValue($item['title'] ?? null), isset($item['description']) ? self::stringValue($item['description']) : null, isset($item['published-at']) ? self::stringValue($item['published-at']) : null, isset($item['artwork-reference']) ? self::stringValue($item['artwork-reference']) : null, isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null, isset($item['kind']) ? self::stringValue($item['kind']) : null, isset($item['size-bytes']) ? self::intValue($item['size-bytes']) : null, is_bool($item['size-estimated'] ?? null) ? $item['size-estimated'] : false, isset($item['upstream-state']) ? self::stringValue($item['upstream-state']) : null);
     }
 
     /**
