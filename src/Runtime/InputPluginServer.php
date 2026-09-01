@@ -31,7 +31,7 @@ final class InputPluginServer
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
 
             try {
-                $result = $this->dispatch($plugin, (string) ($message['method'] ?? ''), is_array($message['params'] ?? null) ? $message['params'] : []);
+                $result = $this->dispatch($plugin, is_string($message['method'] ?? null) ? $message['method'] : '', is_array($message['params'] ?? null) ? $message['params'] : []);
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
             } catch (Throwable $exception) {
                 $message = $exception->getMessage();
@@ -44,12 +44,16 @@ final class InputPluginServer
         exit(0);
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<int|string, mixed>
+     */
     private function dispatch(InputPlugin $plugin, string $method, array $params): array
     {
         return match ($method) {
             'input.resolve' => WireMapper::resolvedInput($plugin->resolve(WireMapper::sourceDescriptorFromWire($params['source'] ?? []))),
-            'input.discover' => WireMapper::discoveredItems($plugin->discover((string) ($params['input_id'] ?? ''), DiscoveryIntent::from((string) ($params['intent'] ?? 'refresh')), $this->options($params['options'] ?? []))),
-            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(is_array($params['item'] ?? null) ? $params['item'] : []), new AcquisitionOptions(MediaKind::from((string) ($params['media_kind'] ?? 'video')), $this->options($params['options'] ?? [])))),
+            'input.discover' => WireMapper::discoveredItems($plugin->discover(is_string($params['input_id'] ?? null) ? $params['input_id'] : '', DiscoveryIntent::from(is_string($params['intent'] ?? null) ? $params['intent'] : 'refresh'), $this->options($params['options'] ?? []))),
+            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(RuntimeFrameCodec::object($params['item'] ?? [])), new AcquisitionOptions(MediaKind::from(is_string($params['media_kind'] ?? null) ? $params['media_kind'] : 'video'), $this->options($params['options'] ?? [])))),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
     }
@@ -58,6 +62,7 @@ final class InputPluginServer
     {
         $call = function (string $method, array $params): array {
             static $next = 1;
+            /** @var int $next */
             $id = 'sdk-' . $next++;
             RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
 
@@ -66,8 +71,8 @@ final class InputPluginServer
                     continue;
                 }
 
-                if (isset($message['error'])) {
-                    throw new \RuntimeException((string) (($message['error']['message'] ?? null) ?: 'capability failed'));
+                if (is_array($message['error'] ?? null)) {
+                    throw new \RuntimeException(is_string($message['error']['message'] ?? null) ? $message['error']['message'] : 'capability failed');
                 }
 
                 return is_array($message['result'] ?? null) ? $message['result'] : [];
@@ -79,7 +84,10 @@ final class InputPluginServer
         return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), new RuntimeHelperRunner($call));
     }
 
-    /** @return list<InputOption> */
+    /**
+     * @param mixed $values
+     * @return list<InputOption>
+     */
     private function options(mixed $values): array
     {
         if (! is_array($values)) {

@@ -33,7 +33,7 @@ final class PluginServer
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
 
             try {
-                $result = $this->dispatch((string) ($message['method'] ?? ''), is_array($message['params'] ?? null) ? $message['params'] : []);
+                $result = $this->dispatch(is_string($message['method'] ?? null) ? $message['method'] : '', is_array($message['params'] ?? null) ? $message['params'] : []);
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
             } catch (Throwable $exception) {
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => 'plugin-failure', 'message' => $exception->getMessage(), 'retryable' => false]]);
@@ -42,15 +42,19 @@ final class PluginServer
         exit(0);
     }
 
+    /**
+     * @param array<int|string, mixed> $params
+     * @return array<int|string, mixed>
+     */
     private function dispatch(string $method, array $params): array
     {
         $context = $this->context();
 
         return match ($method) {
-            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest($params, $context->staging, $context->helpers))),
-            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest($params, $context->staging, $context->helpers))),
-            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest($params['request'] ?? $params, $context->staging, $context->helpers), $this->publication($params['publication'] ?? [])), $context)),
-            'broadcast.operation' => WireMapper::operationResult($this->broadcast->operation($this->operationRequest($params), $context)),
+            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers))),
+            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers))),
+            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? []), $context->staging, $context->helpers), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
+            'broadcast.operation' => WireMapper::operationResult($this->broadcast->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
     }
@@ -59,6 +63,7 @@ final class PluginServer
     {
         $call = function (string $method, array $params): array {
             static $next = 1;
+            /** @var int $next */
             $id = 'sdk-' . $next++;
             RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
 
@@ -67,8 +72,8 @@ final class PluginServer
                     continue;
                 }
 
-                if (isset($message['error'])) {
-                    throw new \RuntimeException((string) (($message['error']['message'] ?? null) ?: 'capability failed'));
+                if (is_array($message['error'] ?? null)) {
+                    throw new \RuntimeException(is_string($message['error']['message'] ?? null) ? $message['error']['message'] : 'capability failed');
                 }
 
                 return is_array($message['result'] ?? null) ? $message['result'] : [];
@@ -82,7 +87,7 @@ final class PluginServer
         return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers);
     }
 
-    /** @param array<string,mixed> $data */
+    /** @param array<string, mixed> $data */
     private function publishRequest(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null): PublishRequest
     {
         return WireMapper::publishRequestFromWire($data, $staging, $helpers);

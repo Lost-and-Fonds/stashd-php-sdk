@@ -11,7 +11,7 @@ final class RuntimeReadableResource implements ReadableResource
 {
     private bool $eof = false;
 
-    /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
+    /** @param Closure $call */
     public function __construct(private Closure $call, private string $reference) {}
 
     public function read(int $maximumBytes = 65536): string
@@ -20,7 +20,12 @@ final class RuntimeReadableResource implements ReadableResource
             return '';
         }
         $result = ($this->call)('resource.read', ['reference' => $this->reference, 'maximum_bytes' => $maximumBytes]);
-        $data = base64_decode((string) ($result['data'] ?? ''), true);
+
+        if (! is_array($result)) {
+            return '';
+        }
+        $encoded = is_string($result['data'] ?? null) ? $result['data'] : '';
+        $data = base64_decode($encoded, true);
         $this->eof = (bool) ($result['eof'] ?? false);
 
         return $data === false ? '' : $data;

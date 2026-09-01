@@ -11,13 +11,17 @@ use Stashd\PluginSdk\HelperRunner;
 
 final readonly class RuntimeHelperRunner implements HelperRunner
 {
-    /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
+    /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
     /** @param list<string> $arguments */
     public function run(string $name, array $arguments = []): HelperResult
     {
         $result = ($this->call)('helper.run', ['name' => $name, 'arguments' => $arguments]);
+
+        if (! is_array($result)) {
+            throw new RuntimeException('Plugin helper returned an invalid response.');
+        }
 
         if (! is_int($result['exit_code'] ?? null)) {
             throw new RuntimeException('Plugin helper returned an invalid exit code.');

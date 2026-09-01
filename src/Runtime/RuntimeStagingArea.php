@@ -11,7 +11,7 @@ use Stashd\PluginSdk\StagingArea;
 
 final readonly class RuntimeStagingArea implements StagingArea
 {
-    /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
+    /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
     public function write(string $relativePath, string $content, ?string $mediaType = null): StagedArtifact
@@ -22,18 +22,20 @@ final readonly class RuntimeStagingArea implements StagingArea
             'media_type' => $mediaType,
         ]);
 
-        return $this->artifact($result, $relativePath);
+        return $this->artifact(RuntimeFrameCodec::object($result), $relativePath);
     }
 
     public function stage(string $relativePath, ?string $mediaType = null): StagedArtifact
     {
-        return $this->artifact(($this->call)('staging.stage', [
+        $result = ($this->call)('staging.stage', [
             'relative_path' => $relativePath,
             'media_type' => $mediaType,
-        ]), $relativePath);
+        ]);
+
+        return $this->artifact(RuntimeFrameCodec::object($result), $relativePath);
     }
 
-    /** @param array<string,mixed> $result */
+    /** @param array<string, mixed> $result */
     private function artifact(array $result, string $relativePath): StagedArtifact
     {
         if (! is_string($result['reference'] ?? null)) {

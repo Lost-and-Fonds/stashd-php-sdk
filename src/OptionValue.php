@@ -26,13 +26,13 @@ final class OptionValue
     /** @param array{tag?: mixed, value?: mixed} $value */
     public static function fromWire(array $value): self
     {
-        $tag = $value['tag'] ?? null;
+        $tag = is_string($value['tag'] ?? null) ? $value['tag'] : null;
         $raw = $value['value'] ?? null;
 
         return match ($tag) {
             'boolean' => self::boolean((bool) $raw),
-            'number' => self::number((int) $raw),
-            'text' => self::text((string) $raw),
+            'number' => self::number(is_int($raw) || is_float($raw) || is_string($raw) ? (int) $raw : 0),
+            'text' => self::text(is_scalar($raw) ? (string) $raw : ''),
             default => throw new \InvalidArgumentException('unknown option value type'),
         };
     }

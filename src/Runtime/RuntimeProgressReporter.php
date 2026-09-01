@@ -9,7 +9,7 @@ use Stashd\PluginSdk\ProgressReporter;
 
 final readonly class RuntimeProgressReporter implements ProgressReporter
 {
-    /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
+    /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
     public function report(string $stage): void

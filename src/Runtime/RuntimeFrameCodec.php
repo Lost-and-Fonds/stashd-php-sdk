@@ -10,7 +10,24 @@ final class RuntimeFrameCodec
 {
     private const MAX_FRAME_BYTES = 268_435_456;
 
-    /** @param resource $stream */
+    /** @return array<string, mixed> */
+    public static function object(mixed $value): array
+    {
+        $result = [];
+
+        foreach (is_array($value) ? $value : [] as $key => $entry) {
+            if (is_string($key)) {
+                $result[$key] = $entry;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param resource $stream
+     * @param array<string, mixed> $message
+     */
     public static function write($stream, array $message): void
     {
         $payload = json_encode($message, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
@@ -21,7 +38,10 @@ final class RuntimeFrameCodec
         fflush($stream);
     }
 
-    /** @param resource $stream */
+    /**
+     * @param resource $stream
+     * @return array<int|string, mixed>|null
+     */
     public static function read($stream, float $timeout = 30.0): ?array
     {
         $deadline = microtime(true) + $timeout;
@@ -34,9 +54,10 @@ final class RuntimeFrameCodec
         if (strlen($header) !== 4) {
             throw new RuntimeException('plugin IPC frame header is truncated');
         }
-        $length = unpack('Nlength', $header)['length'];
+        $unpacked = unpack('Nlength', $header);
+        $length = $unpacked['length'] ?? null;
 
-        if ($length < 2 || $length > self::MAX_FRAME_BYTES) {
+        if (! is_int($length) || $length < 2 || $length > self::MAX_FRAME_BYTES) {
             throw new RuntimeException('plugin IPC frame is outside the size limit');
         }
         $payload = self::readBytes($stream, $length, $deadline);
@@ -50,7 +71,15 @@ final class RuntimeFrameCodec
             throw new RuntimeException('plugin IPC message is not an object');
         }
 
-        return $message;
+        $result = [];
+
+        foreach ($message as $key => $value) {
+            if (is_string($key)) {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     /** @param resource $stream */
@@ -64,14 +93,20 @@ final class RuntimeFrameCodec
             if ($remaining <= 0) {
                 throw new RuntimeException('plugin IPC read timed out');
             }
+            /** @var array<int, resource> $read */
             $read = [$stream];
+            /** @var array<int, resource> $write */
+            $write = [];
+            /** @var array<int, resource> $except */
+            $except = [];
             $seconds = (int) $remaining;
             $microseconds = (int) (($remaining - $seconds) * 1_000_000);
 
             if (stream_select($read, $write, $except, $seconds, $microseconds) === 0) {
                 throw new RuntimeException('plugin IPC read timed out');
             }
-            $chunk = fread($stream, min(65_536, $length - strlen($result)));
+            $chunkLength = max(1, min(65_536, $length - strlen($result)));
+            $chunk = fread($stream, $chunkLength);
 
             if ($chunk === false || $chunk === '') {
                 return $result;

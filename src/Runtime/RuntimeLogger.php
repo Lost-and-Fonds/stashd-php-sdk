@@ -9,7 +9,7 @@ use Stashd\PluginSdk\Logger;
 
 final readonly class RuntimeLogger implements Logger
 {
-    /** @param callable(string,array<string,mixed>):array<string,mixed> $call */
+    /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
     public function info(string $message): void

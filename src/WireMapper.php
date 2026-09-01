@@ -47,24 +47,24 @@ final class WireMapper
     public static function publishRequestFromWire(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null): PublishRequest
     {
         return new PublishRequest(
-            (string) ($data['reference'] ?? ''),
+            self::stringValue($data['reference'] ?? null),
             self::settingsFromWire($data['settings'] ?? []),
-            array_map(static fn(array $source): Source => new Source((string) ($source['reference'] ?? ''), self::settingsFromWire($source['settings'] ?? [])), self::listOfArrays($data['sources'] ?? [])),
+            array_map(static fn(array $source): Source => new Source(self::stringValue($source['reference'] ?? null), self::settingsFromWire($source['settings'] ?? [])), self::listOfArrays($data['sources'] ?? [])),
             array_map(static fn(array $item): Item => new Item(
-                (string) ($item['id'] ?? ''),
-                (string) ($item['title'] ?? ''),
+                self::stringValue($item['id'] ?? null),
+                self::stringValue($item['title'] ?? null),
                 array_map(static fn(array $resource): ItemResource => new ItemResource(
-                    (string) ($resource['reference'] ?? ''),
-                    (string) ($resource['kind'] ?? ''),
-                    isset($resource['derivation-key']) ? (string) $resource['derivation-key'] : null,
-                    isset($resource['url']) ? (string) $resource['url'] : null,
-                    isset($resource['media-type']) ? (string) $resource['media-type'] : null,
-                    (int) ($resource['size-bytes'] ?? 0),
+                    self::stringValue($resource['reference'] ?? null),
+                    self::stringValue($resource['kind'] ?? null),
+                    isset($resource['derivation-key']) ? self::stringValue($resource['derivation-key']) : null,
+                    isset($resource['url']) ? self::stringValue($resource['url']) : null,
+                    isset($resource['media-type']) ? self::stringValue($resource['media-type']) : null,
+                    self::intValue($resource['size-bytes'] ?? null),
                 ), self::listOfArrays($item['resources'] ?? [])),
-                isset($item['source-reference']) ? (string) $item['source-reference'] : null,
-                isset($item['description']) ? (string) $item['description'] : null,
-                isset($item['published-at']) ? (string) $item['published-at'] : null,
-                isset($item['duration-seconds']) ? (int) $item['duration-seconds'] : null,
+                isset($item['source-reference']) ? self::stringValue($item['source-reference']) : null,
+                isset($item['description']) ? self::stringValue($item['description']) : null,
+                isset($item['published-at']) ? self::stringValue($item['published-at']) : null,
+                isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null,
             ), self::listOfArrays($data['items'] ?? [])),
             $staging,
             $helpers,
@@ -74,7 +74,7 @@ final class WireMapper
     /** @param array<string, mixed> $data */
     public static function operationRequestFromWire(array $data): OperationRequest
     {
-        return new OperationRequest((string) ($data['name'] ?? ''), self::settingsFromWire($data['settings'] ?? []), self::settingsFromWire($data['payload'] ?? []));
+        return new OperationRequest(self::stringValue($data['name'] ?? null), self::settingsFromWire($data['settings'] ?? []), self::settingsFromWire($data['payload'] ?? []));
     }
 
     /** @param array<string, mixed> $data */
@@ -83,12 +83,13 @@ final class WireMapper
         $artifact = is_array($data['artifact'] ?? null) ? $data['artifact'] : [];
 
         return new Publication(
-            new Artifact((string) ($artifact['reference'] ?? ''), isset($artifact['media-type']) ? (string) $artifact['media-type'] : null, (int) ($artifact['size-bytes'] ?? 0)),
-            array_map(static fn(array $file): PublishedFile => new PublishedFile((string) ($file['item-id'] ?? ''), (string) ($file['source-reference'] ?? ''), (string) ($file['relative-path'] ?? '')), self::listOfArrays($data['files'] ?? [])),
+            new Artifact(self::stringValue($artifact['reference'] ?? null), isset($artifact['media-type']) ? self::stringValue($artifact['media-type']) : null, self::intValue($artifact['size-bytes'] ?? null)),
+            array_map(static fn(array $file): PublishedFile => new PublishedFile(self::stringValue($file['item-id'] ?? null), self::stringValue($file['source-reference'] ?? null), self::stringValue($file['relative-path'] ?? null)), self::listOfArrays($data['files'] ?? [])),
             self::settingsFromWire($data['published-metadata'] ?? []),
         );
     }
 
+    /** @return array<string,mixed> */
     public static function preparation(Preparation $preparation): array
     {
         return ['artifacts' => array_map(static fn(DerivedArtifact $artifact): array => [
@@ -98,23 +99,28 @@ final class WireMapper
         ], $preparation->artifacts)];
     }
 
+    /** @return array<string,mixed> */
     public static function operationResult(OperationResult $result): array
     {
         return ['choices' => array_map(static fn(Choice $choice): array => ['value' => $choice->value, 'label' => $choice->label], $result->choices), 'values' => array_map([self::class, 'setting'], $result->values)];
     }
 
+    /** @return array<string,mixed> */
     public static function resolvedInput(ResolvedInput $input): array
     {
         return ['id' => $input->id, 'canonical-reference' => $input->canonicalReference, 'kind' => $input->kind, 'title' => $input->title, 'artwork-reference' => $input->artworkReference, 'estimated-item-count' => $input->estimatedItemCount, 'size-bytes' => $input->sizeBytes, 'size-estimated' => $input->sizeEstimated];
     }
 
+    /** @return list<array{key:string,value:array{tag:string,value:bool|int|string}}> */
     public static function sourceDescriptor(SourceDescriptor $source): array
     {
-        return array_map(
-            static fn(string $key, OptionValue $value): array => ['key' => $key, 'value' => $value->toWire()],
-            array_keys($source->values),
-            $source->values,
-        );
+        $values = [];
+
+        foreach ($source->values as $key => $value) {
+            $values[] = ['key' => $key, 'value' => $value->toWire()];
+        }
+
+        return $values;
     }
 
     public static function sourceDescriptorFromWire(mixed $values): SourceDescriptor
@@ -133,41 +139,73 @@ final class WireMapper
         return new SourceDescriptor($source);
     }
 
-    /** @param list<DiscoveredItem> $items */
+    /**
+     * @param list<DiscoveredItem> $items
+     * @return list<array<string, mixed>>
+     */
     public static function discoveredItems(array $items): array
     {
         return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated], $items);
     }
 
+    /** @return array<string,mixed> */
     public static function acquisition(AcquisitionResult $result): array
     {
         return ['artifacts' => array_map([self::class, 'stagedArtifact'], $result->artifacts)];
     }
 
-    /** @param array<string,mixed> $item */
+    /** @param array<string, mixed> $item */
     public static function discoveredItemFromWire(array $item): DiscoveredItem
     {
-        return new DiscoveredItem((string) ($item['id'] ?? ''), (string) ($item['reference'] ?? ''), (string) ($item['title'] ?? ''), isset($item['description']) ? (string) $item['description'] : null, isset($item['published-at']) ? (string) $item['published-at'] : null, isset($item['artwork-reference']) ? (string) $item['artwork-reference'] : null, isset($item['duration-seconds']) ? (int) $item['duration-seconds'] : null, isset($item['kind']) ? (string) $item['kind'] : null, isset($item['size-bytes']) ? (int) $item['size-bytes'] : null, (bool) ($item['size-estimated'] ?? false));
+        return new DiscoveredItem(self::stringValue($item['id'] ?? null), self::stringValue($item['reference'] ?? null), self::stringValue($item['title'] ?? null), isset($item['description']) ? self::stringValue($item['description']) : null, isset($item['published-at']) ? self::stringValue($item['published-at']) : null, isset($item['artwork-reference']) ? self::stringValue($item['artwork-reference']) : null, isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null, isset($item['kind']) ? self::stringValue($item['kind']) : null, isset($item['size-bytes']) ? self::intValue($item['size-bytes']) : null, is_bool($item['size-estimated'] ?? null) ? $item['size-estimated'] : false);
     }
 
-    /** @param mixed $values @return list<Setting> */
+    /**
+     * @param mixed $values
+     * @return list<Setting>
+     */
     private static function settingsFromWire(mixed $values): array
     {
-        return array_map(static function (array $setting): Setting {
-            $value = is_array($setting['value'] ?? null) ? $setting['value'] : [];
+        $result = [];
 
-            return new Setting((string) ($setting['key'] ?? ''), OptionValue::fromWire($value));
-        }, self::listOfArrays($values));
+        foreach (self::listOfArrays($values) as $setting) {
+            $value = is_array($setting['value'] ?? null) ? $setting['value'] : [];
+            $result[] = new Setting(self::stringValue($setting['key'] ?? null), OptionValue::fromWire($value));
+        }
+
+        return $result;
     }
 
-    /** @param mixed $values @return list<array<string,mixed>> */
+    /**
+     * @param mixed $values
+     * @return list<array<string, mixed>>
+     */
     private static function listOfArrays(mixed $values): array
     {
         if (! is_array($values)) {
             return [];
         }
 
-        return array_values(array_filter($values, static fn(mixed $value): bool => is_array($value)));
+        $result = [];
+
+        foreach ($values as $value) {
+            if (is_array($value)) {
+                /** @var array<string,mixed> $value */
+                $result[] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    private static function stringValue(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
+    }
+
+    private static function intValue(mixed $value): int
+    {
+        return is_int($value) || is_float($value) || is_string($value) ? (int) $value : 0;
     }
 
     /** @return array<string, mixed> */
