@@ -60,13 +60,22 @@ final class InputPluginServer
 
     private function context(): PluginContext
     {
-        $call = function (string $method, array $params): array {
+        $call = function (string $method, array $params, ?callable $onOutput = null): array {
             static $next = 1;
             /** @var int $next */
             $id = 'sdk-' . $next++;
             RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'request', 'method' => $method, 'params' => $params]);
 
             while (($message = RuntimeFrameCodec::read(STDIN, 300.0)) !== null) {
+                if (($message['kind'] ?? null) === 'notification') {
+                    if (($message['method'] ?? null) === 'helper.output' && $onOutput !== null) {
+                        $params = is_array($message['params'] ?? null) ? $message['params'] : [];
+                        $onOutput(is_string($params['channel'] ?? null) ? $params['channel'] : 'out', is_string($params['buffer'] ?? null) ? $params['buffer'] : '');
+                    }
+
+                    continue;
+                }
+
                 if (($message['id'] ?? null) !== $id) {
                     continue;
                 }

@@ -12,8 +12,8 @@ final readonly class RuntimeProgressReporter implements ProgressReporter
     /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
-    public function report(string $stage): void
+    public function report(string $stage, ?float $fraction = null): void
     {
-        ($this->call)('event.progress', ['stage' => $stage]);
+        ($this->call)('event.progress', ['stage' => $stage, 'fraction' => $fraction]);
     }
 }

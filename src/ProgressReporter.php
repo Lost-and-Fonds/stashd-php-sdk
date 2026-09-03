@@ -6,5 +6,5 @@ namespace Stashd\PluginSdk;
 
 interface ProgressReporter
 {
-    public function report(string $stage): void;
+    public function report(string $stage, ?float $fraction = null): void;
 }

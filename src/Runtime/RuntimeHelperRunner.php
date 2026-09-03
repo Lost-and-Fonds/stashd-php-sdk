@@ -14,10 +14,12 @@ final readonly class RuntimeHelperRunner implements HelperRunner
     /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
-    /** @param list<string> $arguments */
-    public function run(string $name, array $arguments = []): HelperResult
+    /** @param list<string> $arguments
+     * @param callable(string, string): void|null $onOutput
+     */
+    public function run(string $name, array $arguments = [], ?callable $onOutput = null): HelperResult
     {
-        $result = ($this->call)('helper.run', ['name' => $name, 'arguments' => $arguments]);
+        $result = ($this->call)('helper.run', ['name' => $name, 'arguments' => $arguments], $onOutput);
 
         if (! is_array($result)) {
             throw new RuntimeException('Plugin helper returned an invalid response.');
