@@ -44,7 +44,7 @@ final class WireMapper
     }
 
     /** @param array<string, mixed> $data */
-    public static function publishRequestFromWire(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null): PublishRequest
+    public static function publishRequestFromWire(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null, ?ProgressReporter $progress = null): PublishRequest
     {
         return new PublishRequest(
             self::stringValue($data['reference'] ?? null),
@@ -68,6 +68,7 @@ final class WireMapper
             ), self::listOfArrays($data['items'] ?? [])),
             $staging,
             $helpers,
+            $progress,
         );
     }
 

@@ -11,6 +11,7 @@ use Stashd\PluginSdk\Item;
 use Stashd\PluginSdk\ItemResource;
 use Stashd\PluginSdk\OperationRequest;
 use Stashd\PluginSdk\PluginContext;
+use Stashd\PluginSdk\ProgressReporter;
 use Stashd\PluginSdk\Preparation;
 use Stashd\PluginSdk\Publication;
 use Stashd\PluginSdk\PublishRequest;
@@ -51,9 +52,9 @@ final class PluginServer
         $context = $this->context();
 
         return match ($method) {
-            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers))),
-            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers))),
-            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? []), $context->staging, $context->helpers), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
+            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers, $context->progress))),
+            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers, $context->progress))),
+            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? []), $context->staging, $context->helpers, $context->progress), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
             'broadcast.operation' => WireMapper::operationResult($this->broadcast->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
@@ -88,9 +89,9 @@ final class PluginServer
     }
 
     /** @param array<string, mixed> $data */
-    private function publishRequest(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null): PublishRequest
+    private function publishRequest(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null, ?ProgressReporter $progress = null): PublishRequest
     {
-        return WireMapper::publishRequestFromWire($data, $staging, $helpers);
+        return WireMapper::publishRequestFromWire($data, $staging, $helpers, $progress);
     }
 
     /** @param array<string,mixed> $data */
