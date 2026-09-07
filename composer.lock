@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Lost-and-Fonds/plugin-api.git",
-                "reference": "5af5a08"
+                "reference": "5af5a08c347c15b3afbb6fb33b06ff5a04149f14"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Lost-and-Fonds/plugin-api/zipball/5af5a08",
-                "reference": "5af5a08",
+                "url": "https://api.github.com/repos/Lost-and-Fonds/plugin-api/zipball/5af5a08c347c15b3afbb6fb33b06ff5a04149f14",
+                "reference": "5af5a08c347c15b3afbb6fb33b06ff5a04149f14",
                 "shasum": ""
             },
             "type": "library",
@@ -26,7 +26,7 @@
             ],
             "description": "The language-neutral contract for native Stashd plugins",
             "support": {
-                "source": "https://github.com/Lost-and-Fonds/plugin-api/tree/5af5a08",
+                "source": "https://github.com/Lost-and-Fonds/plugin-api/tree/5af5a08c347c15b3afbb6fb33b06ff5a04149f14",
                 "issues": "https://github.com/Lost-and-Fonds/plugin-api/issues"
             },
             "time": "2026-09-07T00:00:00+00:00"

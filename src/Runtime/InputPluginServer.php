@@ -9,6 +9,7 @@ use Stashd\PluginSdk\AcquisitionOptions;
 use Stashd\PluginSdk\DiscoveryIntent;
 use Stashd\PluginSdk\InputOption;
 use Stashd\PluginSdk\InputPlugin;
+use Stashd\PluginSdk\InvalidPluginResultException;
 use Stashd\PluginSdk\MediaKind;
 use Stashd\PluginSdk\OptionValue;
 use Stashd\PluginSdk\PluginContext;
@@ -119,16 +120,15 @@ final class InputPluginServer
     private function options(mixed $values): array
     {
         if (! is_array($values)) {
-            return [];
+            throw new InvalidPluginResultException('input options must be a list');
         }
         $options = [];
 
         foreach ($values as $value) {
-            if (! is_array($value) || ! is_string($value['key'] ?? null)) {
-                continue;
+            if (! is_array($value) || ! is_string($value['key'] ?? null) || ! is_array($value['value'] ?? null)) {
+                throw new InvalidPluginResultException('input option is malformed');
             }
-            $encoded = is_array($value['value'] ?? null) ? $value['value'] : [];
-            $options[] = new InputOption($value['key'], OptionValue::fromWire($encoded));
+            $options[] = new InputOption($value['key'], OptionValue::fromWire($value['value']));
         }
 
         return $options;

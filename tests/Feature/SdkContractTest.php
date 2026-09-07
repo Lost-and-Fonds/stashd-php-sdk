@@ -35,6 +35,14 @@ it('passes the SDK conformance checks', function (): void {
         throw new RuntimeException('SDK retryability mapping failed');
     }
 
+    foreach (PluginErrorCode::cases() as $code) {
+        $mapped = WireMapper::pluginFailure(new PluginFailure($code, new PluginError('fixture', false)));
+
+        if (($mapped['tag'] ?? null) !== $code->value) {
+            throw new RuntimeException('SDK error variant mapping failed for ' . $code->value);
+        }
+    }
+
     try {
         throw new PluginFailureException($failure);
     } catch (PluginFailureException $exception) {
@@ -52,6 +60,8 @@ it('passes the SDK conformance checks', function (): void {
     expect(fn(): mixed => WireMapper::publishRequestFromWire(['settings' => [], 'sources' => [], 'items' => []]))
         ->toThrow(InvalidPluginResultException::class);
     expect(fn(): mixed => OptionValue::fromWire(['tag' => 'number', 'value' => '7']))
+        ->toThrow(InvalidPluginResultException::class);
+    expect(fn(): mixed => WireMapper::discoveredItemFromWire(['id' => 'id', 'reference' => 'ref', 'title' => 'title', 'duration-seconds' => 'bad']))
         ->toThrow(InvalidPluginResultException::class);
     $contextReflection = new ReflectionClass(PluginContext::class);
     $contextSource = (string) file_get_contents((string) $contextReflection->getFileName());

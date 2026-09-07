@@ -60,14 +60,14 @@ final class WireMapper
                 array_map(static fn(array $resource): ItemResource => new ItemResource(
                     self::requiredString($resource, 'reference'),
                     self::requiredString($resource, 'kind'),
-                    isset($resource['derivation-key']) ? self::stringValue($resource['derivation-key']) : null,
-                    isset($resource['url']) ? self::stringValue($resource['url']) : null,
-                    isset($resource['media-type']) ? self::stringValue($resource['media-type']) : null,
+                    isset($resource['derivation-key']) ? self::optionalString($resource['derivation-key']) : null,
+                    isset($resource['url']) ? self::optionalString($resource['url']) : null,
+                    isset($resource['media-type']) ? self::optionalString($resource['media-type']) : null,
                     self::intValue($resource['size-bytes'] ?? null),
                 ), self::listOfArrays($item['resources'] ?? [])),
-                isset($item['source-reference']) ? self::stringValue($item['source-reference']) : null,
-                isset($item['description']) ? self::stringValue($item['description']) : null,
-                isset($item['published-at']) ? self::stringValue($item['published-at']) : null,
+                isset($item['source-reference']) ? self::optionalString($item['source-reference']) : null,
+                isset($item['description']) ? self::optionalString($item['description']) : null,
+                isset($item['published-at']) ? self::optionalString($item['published-at']) : null,
                 isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null,
             ), self::listOfArrays($data['items'] ?? [])),
         );
@@ -130,12 +130,7 @@ final class WireMapper
         $source = [];
 
         foreach (self::listOfArrays($values) as $value) {
-            $key = $value['key'] ?? null;
-            $encoded = $value['value'] ?? null;
-
-            if (is_string($key) && is_array($encoded)) {
-                $source[$key] = OptionValue::fromWire($encoded);
-            }
+            $source[self::requiredString($value, 'key')] = OptionValue::fromWire(self::requiredArray($value, 'value'));
         }
 
         return new SourceDescriptor($source);
@@ -201,11 +196,6 @@ final class WireMapper
         return $result;
     }
 
-    private static function stringValue(mixed $value): string
-    {
-        return is_scalar($value) ? (string) $value : '';
-    }
-
     /** @param array<array-key, mixed> $data */
     private static function requiredString(array $data, string $key): string
     {
@@ -253,7 +243,15 @@ final class WireMapper
 
     private static function intValue(mixed $value): int
     {
-        return is_int($value) || is_float($value) || is_string($value) ? (int) $value : 0;
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value) && is_finite($value) && floor($value) === $value) {
+            return (int) $value;
+        }
+
+        throw new InvalidPluginResultException('integer field is malformed');
     }
 
     /** @return array<string, mixed> */
