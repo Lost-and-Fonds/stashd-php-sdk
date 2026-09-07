@@ -8,12 +8,12 @@ use Stashd\PluginSdk as Sdk;
 
 final class MinimalBroadcast implements Sdk\BroadcastPlugin
 {
-    public function prepare(Sdk\PublishRequest $request): Sdk\Preparation
+    public function prepare(Sdk\PublishRequest $request, Sdk\PluginContext $context): Sdk\Preparation
     {
         return new Sdk\Preparation();
     }
 
-    public function publish(Sdk\PublishRequest $request): Sdk\Publication
+    public function publish(Sdk\PublishRequest $request, Sdk\PluginContext $context): Sdk\Publication
     {
         return new Sdk\Publication(new Sdk\Artifact(''));
     }

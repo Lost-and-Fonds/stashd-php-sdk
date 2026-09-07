@@ -26,14 +26,18 @@ final class OptionValue
     /** @param array{tag?: mixed, value?: mixed} $value */
     public static function fromWire(array $value): self
     {
-        $tag = is_string($value['tag'] ?? null) ? $value['tag'] : null;
-        $raw = $value['value'] ?? null;
+        $tag = $value['tag'] ?? null;
+
+        if (! is_string($tag) || ! array_key_exists('value', $value)) {
+            throw new InvalidPluginResultException('option value is malformed');
+        }
+        $raw = $value['value'];
 
         return match ($tag) {
-            'boolean' => self::boolean((bool) $raw),
-            'number' => self::number(is_int($raw) || is_float($raw) || is_string($raw) ? (int) $raw : 0),
-            'text' => self::text(is_scalar($raw) ? (string) $raw : ''),
-            default => throw new \InvalidArgumentException('unknown option value type'),
+            'boolean' => is_bool($raw) ? self::boolean($raw) : throw new InvalidPluginResultException('boolean option value is malformed'),
+            'number' => is_int($raw) ? self::number($raw) : throw new InvalidPluginResultException('number option value is malformed'),
+            'text' => is_string($raw) ? self::text($raw) : throw new InvalidPluginResultException('text option value is malformed'),
+            default => throw new InvalidPluginResultException('unknown option value type'),
         };
     }
 

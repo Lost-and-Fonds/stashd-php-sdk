@@ -40,22 +40,26 @@ final class WireMapper
             throw new InvalidPluginResultException('staging did not return an artifact');
         }
 
+        if ($artifact->role !== null && ! in_array($artifact->role, ['primary', 'captions', 'artwork', 'metadata'], true)) {
+            throw new InvalidPluginResultException('staging returned an unknown artifact role');
+        }
+
         return ['reference' => $artifact->reference, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes, 'role' => $artifact->role];
     }
 
-    /** @param array<string, mixed> $data */
-    public static function publishRequestFromWire(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null, ?ProgressReporter $progress = null): PublishRequest
+    /** @param array<array-key, mixed> $data */
+    public static function publishRequestFromWire(array $data): PublishRequest
     {
         return new PublishRequest(
-            self::stringValue($data['reference'] ?? null),
+            self::requiredString($data, 'reference'),
             self::settingsFromWire($data['settings'] ?? []),
-            array_map(static fn(array $source): Source => new Source(self::stringValue($source['reference'] ?? null), self::settingsFromWire($source['settings'] ?? [])), self::listOfArrays($data['sources'] ?? [])),
+            array_map(static fn(array $source): Source => new Source(self::requiredString($source, 'reference'), self::settingsFromWire($source['settings'] ?? [])), self::listOfArrays($data['sources'] ?? [])),
             array_map(static fn(array $item): Item => new Item(
-                self::stringValue($item['id'] ?? null),
-                self::stringValue($item['title'] ?? null),
+                self::requiredString($item, 'id'),
+                self::requiredString($item, 'title'),
                 array_map(static fn(array $resource): ItemResource => new ItemResource(
-                    self::stringValue($resource['reference'] ?? null),
-                    self::stringValue($resource['kind'] ?? null),
+                    self::requiredString($resource, 'reference'),
+                    self::requiredString($resource, 'kind'),
                     isset($resource['derivation-key']) ? self::stringValue($resource['derivation-key']) : null,
                     isset($resource['url']) ? self::stringValue($resource['url']) : null,
                     isset($resource['media-type']) ? self::stringValue($resource['media-type']) : null,
@@ -66,26 +70,23 @@ final class WireMapper
                 isset($item['published-at']) ? self::stringValue($item['published-at']) : null,
                 isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null,
             ), self::listOfArrays($data['items'] ?? [])),
-            $staging,
-            $helpers,
-            $progress,
         );
     }
 
-    /** @param array<string, mixed> $data */
+    /** @param array<array-key, mixed> $data */
     public static function operationRequestFromWire(array $data): OperationRequest
     {
-        return new OperationRequest(self::stringValue($data['name'] ?? null), self::settingsFromWire($data['settings'] ?? []), self::settingsFromWire($data['payload'] ?? []));
+        return new OperationRequest(self::requiredString($data, 'name'), self::settingsFromWire($data['settings'] ?? []), self::settingsFromWire($data['payload'] ?? []));
     }
 
     /** @param array<string, mixed> $data */
     public static function publicationFromWire(array $data): Publication
     {
-        $artifact = is_array($data['artifact'] ?? null) ? $data['artifact'] : [];
+        $artifact = self::requiredArray($data, 'artifact');
 
         return new Publication(
-            new Artifact(self::stringValue($artifact['reference'] ?? null), isset($artifact['media-type']) ? self::stringValue($artifact['media-type']) : null, self::intValue($artifact['size-bytes'] ?? null)),
-            array_map(static fn(array $file): PublishedFile => new PublishedFile(self::stringValue($file['item-id'] ?? null), self::stringValue($file['source-reference'] ?? null), self::stringValue($file['relative-path'] ?? null)), self::listOfArrays($data['files'] ?? [])),
+            new Artifact(self::requiredString($artifact, 'reference'), isset($artifact['media-type']) ? self::optionalString($artifact['media-type']) : null, self::intValue($artifact['size-bytes'] ?? null)),
+            array_map(static fn(array $file): PublishedFile => new PublishedFile(self::requiredString($file, 'item-id'), self::requiredString($file, 'source-reference'), self::requiredString($file, 'relative-path')), self::listOfArrays($data['files'] ?? [])),
             self::settingsFromWire($data['published-metadata'] ?? []),
         );
     }
@@ -158,7 +159,7 @@ final class WireMapper
     /** @param array<string, mixed> $item */
     public static function discoveredItemFromWire(array $item): DiscoveredItem
     {
-        return new DiscoveredItem(self::stringValue($item['id'] ?? null), self::stringValue($item['reference'] ?? null), self::stringValue($item['title'] ?? null), isset($item['description']) ? self::stringValue($item['description']) : null, isset($item['published-at']) ? self::stringValue($item['published-at']) : null, isset($item['artwork-reference']) ? self::stringValue($item['artwork-reference']) : null, isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null, isset($item['kind']) ? self::stringValue($item['kind']) : null, isset($item['size-bytes']) ? self::intValue($item['size-bytes']) : null, is_bool($item['size-estimated'] ?? null) ? $item['size-estimated'] : false, isset($item['upstream-state']) ? self::stringValue($item['upstream-state']) : null);
+        return new DiscoveredItem(self::requiredString($item, 'id'), self::requiredString($item, 'reference'), self::requiredString($item, 'title'), isset($item['description']) ? self::optionalString($item['description']) : null, isset($item['published-at']) ? self::optionalString($item['published-at']) : null, isset($item['artwork-reference']) ? self::optionalString($item['artwork-reference']) : null, isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null, isset($item['kind']) ? self::optionalString($item['kind']) : null, isset($item['size-bytes']) ? self::intValue($item['size-bytes']) : null, is_bool($item['size-estimated'] ?? null) ? $item['size-estimated'] : false, isset($item['upstream-state']) ? self::optionalString($item['upstream-state']) : null);
     }
 
     /**
@@ -170,8 +171,8 @@ final class WireMapper
         $result = [];
 
         foreach (self::listOfArrays($values) as $setting) {
-            $value = is_array($setting['value'] ?? null) ? $setting['value'] : [];
-            $result[] = new Setting(self::stringValue($setting['key'] ?? null), OptionValue::fromWire($value));
+            $value = self::requiredArray($setting, 'value');
+            $result[] = new Setting(self::requiredString($setting, 'key'), OptionValue::fromWire($value));
         }
 
         return $result;
@@ -184,16 +185,17 @@ final class WireMapper
     private static function listOfArrays(mixed $values): array
     {
         if (! is_array($values)) {
-            return [];
+            throw new InvalidPluginResultException('expected a list');
         }
 
         $result = [];
 
         foreach ($values as $value) {
-            if (is_array($value)) {
-                /** @var array<string,mixed> $value */
-                $result[] = $value;
+            if (! is_array($value)) {
+                throw new InvalidPluginResultException('list entry is not an object');
             }
+            /** @var array<string,mixed> $value */
+            $result[] = $value;
         }
 
         return $result;
@@ -202,6 +204,51 @@ final class WireMapper
     private static function stringValue(mixed $value): string
     {
         return is_scalar($value) ? (string) $value : '';
+    }
+
+    /** @param array<array-key, mixed> $data */
+    private static function requiredString(array $data, string $key): string
+    {
+        if (! is_string($data[$key] ?? null)) {
+            throw new InvalidPluginResultException("required string field is missing: {$key}");
+        }
+
+        return $data[$key];
+    }
+
+    private static function optionalString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (! is_string($value)) {
+            throw new InvalidPluginResultException('optional string field is malformed');
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<array-key, mixed> $data
+     * @return array<string, mixed>
+     */
+    private static function requiredArray(array $data, string $key): array
+    {
+        if (! is_array($data[$key] ?? null)) {
+            throw new InvalidPluginResultException("required object field is missing: {$key}");
+        }
+
+        $result = [];
+
+        foreach ($data[$key] as $name => $value) {
+            if (! is_string($name)) {
+                throw new InvalidPluginResultException("object field contains a non-string key: {$key}");
+            }
+            $result[$name] = $value;
+        }
+
+        return $result;
     }
 
     private static function intValue(mixed $value): int

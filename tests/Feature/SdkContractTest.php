@@ -49,6 +49,10 @@ it('passes the SDK conformance checks', function (): void {
         throw new RuntimeException('invalid SDK result was accepted');
     } catch (InvalidPluginResultException) {
     }
+    expect(fn(): mixed => WireMapper::publishRequestFromWire(['settings' => [], 'sources' => [], 'items' => []]))
+        ->toThrow(InvalidPluginResultException::class);
+    expect(fn(): mixed => OptionValue::fromWire(['tag' => 'number', 'value' => '7']))
+        ->toThrow(InvalidPluginResultException::class);
     $contextReflection = new ReflectionClass(PluginContext::class);
     $contextSource = (string) file_get_contents((string) $contextReflection->getFileName());
 

@@ -14,6 +14,11 @@ use Stashd\PluginSdk\OptionValue;
 use Stashd\PluginSdk\PluginContext;
 use Stashd\PluginSdk\Runtime\RuntimeFrameCodec;
 use Stashd\PluginSdk\WireMapper;
+use Stashd\PluginSdk\CapabilityUnavailableException;
+use Stashd\PluginSdk\PluginError;
+use Stashd\PluginSdk\PluginErrorCode;
+use Stashd\PluginSdk\PluginFailure;
+use Stashd\PluginSdk\PluginFailureException;
 use Throwable;
 
 final class InputPluginServer
@@ -23,8 +28,8 @@ final class InputPluginServer
 
     public function run(): never
     {
-        RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => []]);
-        RuntimeFrameCodec::read(STDIN, 30.0);
+        RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => ['min' => 1, 'max' => 1]]);
+        $this->handshake();
         $plugin = ($this->factory)($this->context());
 
         while (($message = RuntimeFrameCodec::read(STDIN, 3600.0)) !== null) {
@@ -33,12 +38,12 @@ final class InputPluginServer
             try {
                 $result = $this->dispatch($plugin, is_string($message['method'] ?? null) ? $message['method'] : '', is_array($message['params'] ?? null) ? $message['params'] : []);
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
+            } catch (PluginFailureException $exception) {
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure($exception->failure)]);
+            } catch (CapabilityUnavailableException $exception) {
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure(new PluginFailure(PluginErrorCode::Unavailable, new PluginError($exception->getMessage(), true)))]);
             } catch (Throwable $exception) {
-                $message = $exception->getMessage();
-                $lower = strtolower($message);
-                $code = str_contains($lower, 'unsupported') ? 'unsupported' : (str_contains($lower, 'not found') ? 'not-found' : (str_contains($lower, 'rate') ? 'rate-limited' : (str_contains($lower, 'auth') ? 'authentication' : (str_contains($lower, 'unavailable') ? 'unavailable' : 'failed'))));
-                $retryable = in_array($code, ['rate-limited', 'unavailable', 'failed'], true);
-                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => $code, 'message' => $message, 'retryable' => $retryable]]);
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure(new PluginFailure(PluginErrorCode::Failed, new PluginError($exception->getMessage(), false)))]);
             }
         }
         exit(0);
@@ -91,6 +96,20 @@ final class InputPluginServer
         };
 
         return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), new RuntimeHelperRunner($call));
+    }
+
+    private function handshake(): void
+    {
+        $response = RuntimeFrameCodec::read(STDIN, 30.0);
+
+        if ($response === null || ($response['id'] ?? null) !== 'sdk-hello' || ($response['kind'] ?? null) !== 'response') {
+            throw new \RuntimeException('plugin RPC handshake failed');
+        }
+        $result = RuntimeFrameCodec::object($response['result'] ?? null);
+
+        if (($result['protocol'] ?? null) !== 1 || ($result['min'] ?? null) !== 1 || ($result['max'] ?? null) !== 1) {
+            throw new \RuntimeException('unsupported plugin RPC protocol');
+        }
     }
 
     /**

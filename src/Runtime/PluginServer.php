@@ -6,19 +6,16 @@ namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\BroadcastPlugin;
 use Stashd\PluginSdk\FinalizationRequest;
-use Stashd\PluginSdk\HelperRunner;
-use Stashd\PluginSdk\Item;
-use Stashd\PluginSdk\ItemResource;
 use Stashd\PluginSdk\OperationRequest;
 use Stashd\PluginSdk\PluginContext;
-use Stashd\PluginSdk\ProgressReporter;
-use Stashd\PluginSdk\Preparation;
 use Stashd\PluginSdk\Publication;
 use Stashd\PluginSdk\PublishRequest;
-use Stashd\PluginSdk\Setting;
-use Stashd\PluginSdk\Source;
-use Stashd\PluginSdk\StagingArea;
 use Stashd\PluginSdk\WireMapper;
+use Stashd\PluginSdk\CapabilityUnavailableException;
+use Stashd\PluginSdk\PluginError;
+use Stashd\PluginSdk\PluginErrorCode;
+use Stashd\PluginSdk\PluginFailure;
+use Stashd\PluginSdk\PluginFailureException;
 use Throwable;
 
 final class PluginServer
@@ -27,8 +24,8 @@ final class PluginServer
 
     public function run(): never
     {
-        RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => []]);
-        RuntimeFrameCodec::read(STDIN, 30.0);
+        RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => 'sdk-hello', 'kind' => 'request', 'method' => 'hello', 'params' => ['min' => 1, 'max' => 1]]);
+        $this->handshake();
 
         while (($message = RuntimeFrameCodec::read(STDIN, 3600.0)) !== null) {
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
@@ -36,8 +33,12 @@ final class PluginServer
             try {
                 $result = $this->dispatch(is_string($message['method'] ?? null) ? $message['method'] : '', is_array($message['params'] ?? null) ? $message['params'] : []);
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
+            } catch (PluginFailureException $exception) {
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure($exception->failure)]);
+            } catch (CapabilityUnavailableException $exception) {
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure(new PluginFailure(PluginErrorCode::Unavailable, new PluginError($exception->getMessage(), true)))]);
             } catch (Throwable $exception) {
-                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => ['code' => 'plugin-failure', 'message' => $exception->getMessage(), 'retryable' => false]]);
+                RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure(new PluginFailure(PluginErrorCode::Failed, new PluginError($exception->getMessage(), false)))]);
             }
         }
         exit(0);
@@ -52,9 +53,9 @@ final class PluginServer
         $context = $this->context();
 
         return match ($method) {
-            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers, $context->progress))),
-            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest(RuntimeFrameCodec::object($params), $context->staging, $context->helpers, $context->progress))),
-            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? []), $context->staging, $context->helpers, $context->progress), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
+            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
+            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
+            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? [])), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
             'broadcast.operation' => WireMapper::operationResult($this->broadcast->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
@@ -89,9 +90,9 @@ final class PluginServer
     }
 
     /** @param array<string, mixed> $data */
-    private function publishRequest(array $data, ?StagingArea $staging = null, ?HelperRunner $helpers = null, ?ProgressReporter $progress = null): PublishRequest
+    private function publishRequest(array $data): PublishRequest
     {
-        return WireMapper::publishRequestFromWire($data, $staging, $helpers, $progress);
+        return WireMapper::publishRequestFromWire($data);
     }
 
     /** @param array<string,mixed> $data */
@@ -104,5 +105,19 @@ final class PluginServer
     private function publication(array $data): Publication
     {
         return WireMapper::publicationFromWire($data);
+    }
+
+    private function handshake(): void
+    {
+        $response = RuntimeFrameCodec::read(STDIN, 30.0);
+
+        if ($response === null || ($response['id'] ?? null) !== 'sdk-hello' || ($response['kind'] ?? null) !== 'response') {
+            throw new \RuntimeException('plugin RPC handshake failed');
+        }
+        $result = RuntimeFrameCodec::object($response['result'] ?? null);
+
+        if (($result['protocol'] ?? null) !== 1 || ($result['min'] ?? null) !== 1 || ($result['max'] ?? null) !== 1) {
+            throw new \RuntimeException('unsupported plugin RPC protocol');
+        }
     }
 }
