@@ -148,7 +148,10 @@ final class WireMapper
     /** @return array<string,mixed> */
     public static function acquisition(AcquisitionResult $result): array
     {
-        return ['artifacts' => array_map([self::class, 'stagedArtifact'], $result->artifacts)];
+        return [
+            'artifacts' => array_map(static fn(StagedArtifact $artifact): array => self::stagedArtifact($artifact), $result->artifacts),
+            'unavailable' => array_map(static fn(UnavailableArtifact $artifact): array => ['role' => $artifact->role->value, 'permanent' => $artifact->permanent, 'message' => $artifact->message], $result->unavailable),
+        ];
     }
 
     /** @param array<string, mixed> $item */

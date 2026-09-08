@@ -19,7 +19,9 @@ Broadcast and Input entrypoints use the same framed runtime boundary;
 and progress capabilities to Input providers. Broadcast lifecycle methods each
 receive an invocation-scoped `PluginContext`; `PublishRequest` contains only
 contract data. `StagedArtifact::role` carries generic primary, metadata,
-artwork, and caption roles without provider types.
+artwork, and caption roles without provider types. `AcquisitionOptions` can
+request a subset of those roles, and `AcquisitionResult` reports role-scoped
+unavailability with an explicit permanent flag.
 
 The current binding targets `stashd:plugin@0.2.0`. RPC v1 remains a
 four-byte big-endian length-prefixed UTF-8 JSON stream. Typed

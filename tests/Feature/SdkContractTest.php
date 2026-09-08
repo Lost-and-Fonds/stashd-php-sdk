@@ -13,6 +13,8 @@ foreach (glob(dirname(__DIR__, 2) . '/src/*.php') ?: [] as $file) {
 }
 
 use Stashd\PluginSdk\InvalidPluginResultException;
+use Stashd\PluginSdk\AcquisitionResult;
+use Stashd\PluginSdk\ArtifactRole;
 use Stashd\PluginSdk\OptionValue;
 use Stashd\PluginSdk\PluginContext;
 use Stashd\PluginSdk\PluginError;
@@ -21,6 +23,7 @@ use Stashd\PluginSdk\PluginFailure;
 use Stashd\PluginSdk\PluginFailureException;
 use Stashd\PluginSdk\PluginInvoker;
 use Stashd\PluginSdk\PublishRequest;
+use Stashd\PluginSdk\UnavailableArtifact;
 use Stashd\PluginSdk\WireMapper;
 
 it('passes the SDK conformance checks', function (): void {
@@ -34,6 +37,11 @@ it('passes the SDK conformance checks', function (): void {
     if (! is_array($wireFailure['value'] ?? null) || ($wireFailure['value']['retryable'] ?? null) !== true) {
         throw new RuntimeException('SDK retryability mapping failed');
     }
+
+    expect(WireMapper::acquisition(new AcquisitionResult(unavailable: [new UnavailableArtifact(ArtifactRole::Captions, true, 'No creator captions')])))->toBe([
+        'artifacts' => [],
+        'unavailable' => [['role' => 'captions', 'permanent' => true, 'message' => 'No creator captions']],
+    ]);
 
     foreach (PluginErrorCode::cases() as $code) {
         $mapped = WireMapper::pluginFailure(new PluginFailure($code, new PluginError('fixture', false)));

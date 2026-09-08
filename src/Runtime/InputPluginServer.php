@@ -6,6 +6,7 @@ namespace Stashd\PluginSdk\Runtime;
 
 use Closure;
 use Stashd\PluginSdk\AcquisitionOptions;
+use Stashd\PluginSdk\ArtifactRole;
 use Stashd\PluginSdk\DiscoveryIntent;
 use Stashd\PluginSdk\InputOption;
 use Stashd\PluginSdk\InputPlugin;
@@ -59,9 +60,26 @@ final class InputPluginServer
         return match ($method) {
             'input.resolve' => WireMapper::resolvedInput($plugin->resolve(WireMapper::sourceDescriptorFromWire($params['source'] ?? []))),
             'input.discover' => WireMapper::discoveredItems($plugin->discover(is_string($params['input_id'] ?? null) ? $params['input_id'] : '', DiscoveryIntent::from(is_string($params['intent'] ?? null) ? $params['intent'] : 'refresh'), $this->options($params['options'] ?? []))),
-            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(RuntimeFrameCodec::object($params['item'] ?? [])), new AcquisitionOptions(MediaKind::from(is_string($params['media_kind'] ?? null) ? $params['media_kind'] : 'video'), $this->options($params['options'] ?? [])))),
+            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(RuntimeFrameCodec::object($params['item'] ?? [])), new AcquisitionOptions(MediaKind::from(is_string($params['media_kind'] ?? null) ? $params['media_kind'] : 'video'), $this->options($params['options'] ?? []), $this->artifactRoles($params['requested_roles'] ?? null)))),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
+    }
+
+    /** @return list<ArtifactRole>|null */
+    private function artifactRoles(mixed $roles): ?array
+    {
+        if ($roles === null) {
+            return null;
+        }
+
+        if (! is_array($roles)) {
+            throw new InvalidPluginResultException('requested_roles must be a list');
+        }
+
+        /** @var list<mixed> $roles */
+        $roles = array_values($roles);
+
+        return array_map(static fn(mixed $role): ArtifactRole => ArtifactRole::from(is_string($role) ? $role : ''), $roles);
     }
 
     private function context(): PluginContext
