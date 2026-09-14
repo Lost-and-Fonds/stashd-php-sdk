@@ -7,4 +7,6 @@ namespace Stashd\PluginSdk;
 final class NullProgressReporter implements ProgressReporter
 {
     public function report(string $stage, ?float $fraction = null): void {}
+
+    public function discovered(DiscoveredItem $item): void {}
 }

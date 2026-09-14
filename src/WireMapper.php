@@ -142,7 +142,13 @@ final class WireMapper
      */
     public static function discoveredItems(array $items): array
     {
-        return array_map(static fn(DiscoveredItem $item): array => ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated, 'upstream-state' => $item->upstreamState], $items);
+        return array_map(self::discoveredItem(...), $items);
+    }
+
+    /** @return array<string, mixed> */
+    public static function discoveredItem(DiscoveredItem $item): array
+    {
+        return ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated, 'upstream-state' => $item->upstreamState];
     }
 
     /** @return array<string,mixed> */

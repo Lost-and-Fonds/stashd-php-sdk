@@ -17,6 +17,7 @@ use Stashd\PluginSdk\AcquisitionResult;
 use Stashd\PluginSdk\ArtifactRole;
 use Stashd\PluginSdk\OptionValue;
 use Stashd\PluginSdk\PluginContext;
+use Stashd\PluginSdk\DiscoveredItem;
 use Stashd\PluginSdk\PluginError;
 use Stashd\PluginSdk\PluginErrorCode;
 use Stashd\PluginSdk\PluginFailure;
@@ -71,6 +72,7 @@ it('passes the SDK conformance checks', function (): void {
         ->toThrow(InvalidPluginResultException::class);
     expect(fn(): mixed => WireMapper::discoveredItemFromWire(['id' => 'id', 'reference' => 'ref', 'title' => 'title', 'duration-seconds' => 'bad']))
         ->toThrow(InvalidPluginResultException::class);
+    expect(WireMapper::discoveredItem(new DiscoveredItem('id', 'ref', 'title')))->toMatchArray(['id' => 'id', 'reference' => 'ref', 'title' => 'title']);
     $contextReflection = new ReflectionClass(PluginContext::class);
     $contextSource = (string) file_get_contents((string) $contextReflection->getFileName());
 

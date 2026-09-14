@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime;
 
 use Closure;
+use Stashd\PluginSdk\DiscoveredItem;
 use Stashd\PluginSdk\ProgressReporter;
+use Stashd\PluginSdk\WireMapper;
 
 final readonly class RuntimeProgressReporter implements ProgressReporter
 {
@@ -15,5 +17,10 @@ final readonly class RuntimeProgressReporter implements ProgressReporter
     public function report(string $stage, ?float $fraction = null): void
     {
         ($this->call)('event.progress', ['stage' => $stage, 'fraction' => $fraction]);
+    }
+
+    public function discovered(DiscoveredItem $item): void
+    {
+        ($this->call)('event.discovered', ['item' => WireMapper::discoveredItem($item)]);
     }
 }
