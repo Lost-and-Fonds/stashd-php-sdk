@@ -8,6 +8,9 @@ use Stashd\PluginSdk\BroadcastPlugin;
 use Stashd\PluginSdk\FinalizationRequest;
 use Stashd\PluginSdk\OperationRequest;
 use Stashd\PluginSdk\PluginContext;
+use Stashd\PluginSdk\PluginRegistry;
+use Stashd\PluginSdk\StashCollection;
+use Stashd\PluginSdk\StashCollectionEntry;
 use Stashd\PluginSdk\Publication;
 use Stashd\PluginSdk\PublishRequest;
 use Stashd\PluginSdk\WireMapper;
@@ -20,7 +23,16 @@ use Throwable;
 
 final class PluginServer
 {
-    public function __construct(private BroadcastPlugin $broadcast) {}
+    private PluginRegistry $registry;
+
+    public function __construct(PluginRegistry|BroadcastPlugin $plugins)
+    {
+        $this->registry = $plugins instanceof PluginRegistry ? $plugins : new PluginRegistry();
+
+        if ($plugins instanceof BroadcastPlugin) {
+            $this->registry->broadcast('default', $plugins);
+        }
+    }
 
     public function run(): never
     {
@@ -53,12 +65,49 @@ final class PluginServer
         $context = $this->context();
 
         return match ($method) {
-            'broadcast.prepare' => WireMapper::preparation($this->broadcast->prepare($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
-            'broadcast.publish' => WireMapper::publication($this->broadcast->publish($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
-            'broadcast.finalize' => WireMapper::publication($this->broadcast->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? [])), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
-            'broadcast.operation' => WireMapper::operationResult($this->broadcast->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
+            'broadcast.prepare' => WireMapper::preparation($this->registry->broadcastPlugin('default')->prepare($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
+            'broadcast.publish' => WireMapper::publication($this->registry->broadcastPlugin('default')->publish($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
+            'broadcast.finalize' => WireMapper::publication($this->registry->broadcastPlugin('default')->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? [])), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
+            'broadcast.operation' => WireMapper::operationResult($this->registry->broadcastPlugin('default')->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
+            'stash.collection.export' => $this->export(RuntimeFrameCodec::object($params), $context),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, string>
+     */
+    private function export(array $params, PluginContext $context): array
+    {
+        $exporter = $this->registry->collectionExporterFor($this->requiredString($params, 'exporter'));
+        $entries = [];
+
+        foreach (is_array($params['entries'] ?? null) ? $params['entries'] : [] as $entry) {
+            $entry = RuntimeFrameCodec::object($entry);
+            $entries[] = new StashCollectionEntry(
+                $this->requiredString($entry, 'stash-name'),
+                $this->requiredString($entry, 'broadcast-key'),
+                $this->requiredString($entry, 'broadcast-name'),
+                $this->requiredString($entry, 'public-url'),
+            );
+        }
+
+        $file = $exporter->export(new StashCollection($entries), $context);
+
+        return ['filename' => $file->filename, 'content-type' => $file->contentType, 'contents' => $file->contents];
+    }
+
+    /** @param array<string, mixed> $values */
+    private function requiredString(array $values, string $key): string
+    {
+        $value = $values[$key] ?? null;
+
+        if (! is_string($value) || $value === '') {
+            throw new \RuntimeException("Missing string value: {$key}");
+        }
+
+        return $value;
     }
 
     private function context(): PluginContext
