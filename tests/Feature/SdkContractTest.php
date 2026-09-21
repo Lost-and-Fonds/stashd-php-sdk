@@ -24,6 +24,7 @@ use Stashd\PluginSdk\PluginFailure;
 use Stashd\PluginSdk\PluginFailureException;
 use Stashd\PluginSdk\PluginInvoker;
 use Stashd\PluginSdk\PublishRequest;
+use Stashd\PluginSdk\StagedArtifact;
 use Stashd\PluginSdk\UnavailableArtifact;
 use Stashd\PluginSdk\WireMapper;
 
@@ -43,6 +44,14 @@ it('passes the SDK conformance checks', function (): void {
         'artifacts' => [],
         'unavailable' => [['role' => 'captions', 'permanent' => true, 'message' => 'No creator captions']],
     ]);
+    expect(WireMapper::stagedArtifact(new StagedArtifact('video.en.vtt', 'text/vtt', 62, 'captions', 'en')))->toBe([
+        'reference' => 'video.en.vtt',
+        'media-type' => 'text/vtt',
+        'size-bytes' => 62,
+        'role' => 'captions',
+        'language' => 'en',
+    ]);
+    expect(WireMapper::stagedArtifact(new StagedArtifact('video.mp4', 'video/mp4'))['language'])->toBeNull();
 
     foreach (PluginErrorCode::cases() as $code) {
         $mapped = WireMapper::pluginFailure(new PluginFailure($code, new PluginError('fixture', false)));

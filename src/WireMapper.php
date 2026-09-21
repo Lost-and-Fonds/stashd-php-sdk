@@ -44,7 +44,7 @@ final class WireMapper
             throw new InvalidPluginResultException('staging returned an unknown artifact role');
         }
 
-        return ['reference' => $artifact->reference, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes, 'role' => $artifact->role];
+        return ['reference' => $artifact->reference, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes, 'role' => $artifact->role, 'language' => $artifact->language];
     }
 
     /** @param array<array-key, mixed> $data */
