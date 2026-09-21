@@ -24,6 +24,8 @@ use Stashd\PluginSdk\PluginFailure;
 use Stashd\PluginSdk\PluginFailureException;
 use Stashd\PluginSdk\PluginInvoker;
 use Stashd\PluginSdk\PublishRequest;
+use Stashd\PluginSdk\Item;
+use Stashd\PluginSdk\ItemResource;
 use Stashd\PluginSdk\StagedArtifact;
 use Stashd\PluginSdk\UnavailableArtifact;
 use Stashd\PluginSdk\WireMapper;
@@ -52,6 +54,16 @@ it('passes the SDK conformance checks', function (): void {
         'language' => 'en',
     ]);
     expect(WireMapper::stagedArtifact(new StagedArtifact('video.mp4', 'video/mp4'))['language'])->toBeNull();
+
+    $request = new PublishRequest('broadcast-1', [], [], [
+        new Item('item-1', 'Item', [new ItemResource('caption.en.vtt', 'subtitle', language: 'en')]),
+    ]);
+    $mapped = WireMapper::publishRequest($request);
+    expect($mapped['items'][0]['resources'][0]['language'])->toBe('en')
+        ->and(WireMapper::publishRequestFromWire($mapped)->items[0]->resources[0]->language)->toBe('en');
+    expect(WireMapper::publishRequestFromWire(WireMapper::publishRequest(new PublishRequest('broadcast-1', [], [], [
+        new Item('item-1', 'Item', [new ItemResource('video.mp4', 'video')]),
+    ])))->items[0]->resources[0]->language)->toBeNull();
 
     foreach (PluginErrorCode::cases() as $code) {
         $mapped = WireMapper::pluginFailure(new PluginFailure($code, new PluginError('fixture', false)));

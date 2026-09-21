@@ -64,6 +64,7 @@ final class WireMapper
                     isset($resource['url']) ? self::optionalString($resource['url']) : null,
                     isset($resource['media-type']) ? self::optionalString($resource['media-type']) : null,
                     self::intValue($resource['size-bytes'] ?? null),
+                    isset($resource['language']) ? self::optionalString($resource['language']) : null,
                 ), self::listOfArrays($item['resources'] ?? [])),
                 isset($item['source-reference']) ? self::optionalString($item['source-reference']) : null,
                 isset($item['description']) ? self::optionalString($item['description']) : null,
@@ -287,7 +288,7 @@ final class WireMapper
             'duration-seconds' => $item->durationSeconds,
             'resources' => array_map(static fn(ItemResource $resource): array => [
                 'reference' => $resource->reference, 'kind' => $resource->kind, 'derivation-key' => $resource->derivationKey,
-                'url' => $resource->url, 'media-type' => $resource->mediaType, 'size-bytes' => $resource->sizeBytes,
+                'url' => $resource->url, 'media-type' => $resource->mediaType, 'size-bytes' => $resource->sizeBytes, 'language' => $resource->language,
             ], $item->resources),
         ];
     }

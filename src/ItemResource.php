@@ -13,5 +13,6 @@ final readonly class ItemResource
         public ?string $url = null,
         public ?string $mediaType = null,
         public int $sizeBytes = 0,
+        public ?string $language = null,
     ) {}
 }
