@@ -16,7 +16,6 @@ use Stashd\PluginSdk\InvalidPluginResultException;
 use Stashd\PluginSdk\AcquisitionResult;
 use Stashd\PluginSdk\ArtifactRole;
 use Stashd\PluginSdk\OptionValue;
-use Stashd\PluginSdk\PluginContext;
 use Stashd\PluginSdk\DiscoveredItem;
 use Stashd\PluginSdk\PluginError;
 use Stashd\PluginSdk\PluginErrorCode;
@@ -26,9 +25,12 @@ use Stashd\PluginSdk\PluginInvoker;
 use Stashd\PluginSdk\PublishRequest;
 use Stashd\PluginSdk\Item;
 use Stashd\PluginSdk\ItemResource;
+use Stashd\PluginSdk\NullLogger;
+use Stashd\PluginSdk\PluginContext;
 use Stashd\PluginSdk\StagedArtifact;
 use Stashd\PluginSdk\UnavailableArtifact;
 use Stashd\PluginSdk\WireMapper;
+use Stashd\PluginSdk\Runtime\RuntimeProgressReporter;
 
 it('passes the SDK conformance checks', function (): void {
 
@@ -100,5 +102,17 @@ it('passes the SDK conformance checks', function (): void {
     if (str_contains($contextSource, 'bubblewrap') || str_contains($contextSource, 'FrameCodec')) {
         throw new RuntimeException('sandbox/RPC mechanics leaked into SDK context');
     }
+    expect((new PluginContext(new NullLogger()))->pluginDataPath)->toBe('/plugin-data')
+        ->and((new PluginContext(new NullLogger(), pluginDataPath: '/private-data'))->pluginDataPath)->toBe('/private-data');
+    $progressEvents = [];
+    $progress = new RuntimeProgressReporter(static function (string $method, array $params) use (&$progressEvents): void {
+        $progressEvents[] = [$method, $params];
+    });
+    $progress->report('Downloading', 0.5, 1234, true);
+    $progress->report('Downloading', 0.75, 2468);
+    expect($progressEvents)->toBe([
+        ['event.progress', ['stage' => 'Downloading', 'fraction' => 0.5, 'size_bytes' => 1234, 'size_estimated' => true]],
+        ['event.progress', ['stage' => 'Downloading', 'fraction' => 0.75, 'size_bytes' => 2468, 'size_estimated' => false]],
+    ]);
     expect(true)->toBeTrue();
 });

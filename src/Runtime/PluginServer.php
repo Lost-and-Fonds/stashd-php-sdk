@@ -135,7 +135,7 @@ final class PluginServer
 
         $helpers = new RuntimeHelperRunner($call);
 
-        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers);
+        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers, '/plugin-data');
     }
 
     /** @param array<string, mixed> $data */

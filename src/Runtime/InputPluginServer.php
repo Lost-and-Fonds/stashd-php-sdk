@@ -114,7 +114,7 @@ final class InputPluginServer
             throw new \RuntimeException('host closed capability channel');
         };
 
-        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), new RuntimeHelperRunner($call));
+        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), new RuntimeHelperRunner($call), '/plugin-data');
     }
 
     private function handshake(): void

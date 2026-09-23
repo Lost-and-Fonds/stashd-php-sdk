@@ -23,6 +23,14 @@ artwork, and caption roles without provider types. `AcquisitionOptions` can
 request a subset of those roles, and `AcquisitionResult` reports role-scoped
 unavailability with an explicit permanent flag.
 
+`PluginContext::pluginDataPath` points to the plugin's private writable,
+persistent directory (`/plugin-data` in the sandbox). It survives process
+invocations, application restarts, and package upgrades; staging remains
+temporary and package files remain read-only. Plugins own their data formats.
+`ProgressReporter::report()` can also carry an optional expected byte total;
+exact totals use `sizeEstimated: false`, estimates use `true`, and neither
+changes the factual size recorded for acquired assets.
+
 The current binding targets `stashd:plugin@0.2.0`. RPC v1 remains a
 four-byte big-endian length-prefixed UTF-8 JSON stream. Typed
 `PluginFailureException` values are serialized as the contract's `{tag,value}`
