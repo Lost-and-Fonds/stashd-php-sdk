@@ -38,5 +38,4 @@ four-byte big-endian length-prefixed UTF-8 JSON stream. Typed
 `PluginFailureException` values are serialized as the contract's `{tag,value}`
 error variant; ordinary exceptions become `failed` with `retryable: false`.
 
-See `examples/minimal-broadcast/` for the smallest complete plugin shape. Run
-the SDK checks with `composer test`.
+See `examples/minimal-broadcast/` for the smallest complete plugin shape.
