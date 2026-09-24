@@ -3,10 +3,10 @@
   "description": "PHP authoring SDK for Stashd plugins",
   "type": "library",
   "license": "MIT",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "require": {
     "php": "^8.5",
-    "stashd/plugin-api": "^0.2"
+    "stashd/plugin-api": "^0.2.2"
   },
   "require-dev": {
     "pestphp/pest": "^4.0",

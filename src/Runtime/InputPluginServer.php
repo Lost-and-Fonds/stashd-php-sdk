@@ -60,7 +60,7 @@ final class InputPluginServer
         return match ($method) {
             'input.resolve' => WireMapper::resolvedInput($plugin->resolve(WireMapper::sourceDescriptorFromWire($params['source'] ?? []))),
             'input.discover' => WireMapper::discoveredItems($plugin->discover(is_string($params['input_id'] ?? null) ? $params['input_id'] : '', DiscoveryIntent::from(is_string($params['intent'] ?? null) ? $params['intent'] : 'refresh'), $this->options($params['options'] ?? []))),
-            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(RuntimeFrameCodec::object($params['item'] ?? [])), new AcquisitionOptions(MediaKind::from(is_string($params['media_kind'] ?? null) ? $params['media_kind'] : 'video'), $this->options($params['options'] ?? []), $this->artifactRoles($params['requested_roles'] ?? null)))),
+            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(RuntimeFrameCodec::object($params['item'] ?? [])), new AcquisitionOptions(MediaKind::from(is_string($params['media_kind'] ?? null) ? $params['media_kind'] : 'video'), $this->options($params['options'] ?? []), $this->artifactRoles($params['requested_roles'] ?? null), $this->credentials($params['credentials'] ?? [])))),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
     }
@@ -80,6 +80,24 @@ final class InputPluginServer
         $roles = array_values($roles);
 
         return array_map(static fn(mixed $role): ArtifactRole => ArtifactRole::from(is_string($role) ? $role : ''), $roles);
+    }
+
+    /** @return array<string, string> */
+    private function credentials(mixed $credentials): array
+    {
+        if (! is_array($credentials)) {
+            throw new InvalidPluginResultException('credentials must be a list');
+        }
+        $result = [];
+
+        foreach ($credentials as $credential) {
+            if (! is_array($credential) || ! is_string($credential['key'] ?? null) || trim($credential['key']) === '' || ! is_string($credential['value'] ?? null) || isset($result[$credential['key']])) {
+                throw new InvalidPluginResultException('credential is invalid');
+            }
+            $result[$credential['key']] = $credential['value'];
+        }
+
+        return $result;
     }
 
     private function context(): PluginContext

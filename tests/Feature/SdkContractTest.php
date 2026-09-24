@@ -14,9 +14,12 @@ foreach (glob(dirname(__DIR__, 2) . '/src/*.php') ?: [] as $file) {
 
 use Stashd\PluginSdk\InvalidPluginResultException;
 use Stashd\PluginSdk\AcquisitionResult;
+use Stashd\PluginSdk\AcquisitionOptions;
 use Stashd\PluginSdk\ArtifactRole;
+use Stashd\PluginSdk\DiscoveryIntent;
 use Stashd\PluginSdk\OptionValue;
 use Stashd\PluginSdk\DiscoveredItem;
+use Stashd\PluginSdk\InputPlugin;
 use Stashd\PluginSdk\PluginError;
 use Stashd\PluginSdk\PluginErrorCode;
 use Stashd\PluginSdk\PluginFailure;
@@ -27,10 +30,13 @@ use Stashd\PluginSdk\Item;
 use Stashd\PluginSdk\ItemResource;
 use Stashd\PluginSdk\NullLogger;
 use Stashd\PluginSdk\PluginContext;
+use Stashd\PluginSdk\ResolvedInput;
+use Stashd\PluginSdk\SourceDescriptor;
 use Stashd\PluginSdk\StagedArtifact;
 use Stashd\PluginSdk\UnavailableArtifact;
 use Stashd\PluginSdk\WireMapper;
 use Stashd\PluginSdk\Runtime\RuntimeProgressReporter;
+use Stashd\PluginSdk\Runtime\InputPluginServer;
 
 it('passes the SDK conformance checks', function (): void {
 
@@ -104,6 +110,46 @@ it('passes the SDK conformance checks', function (): void {
     }
     expect((new PluginContext(new NullLogger()))->pluginDataPath)->toBe('/plugin-data')
         ->and((new PluginContext(new NullLogger(), pluginDataPath: '/private-data'))->pluginDataPath)->toBe('/private-data');
+    $received = null;
+    $plugin = new class (static function (AcquisitionOptions $options) use (&$received): void {
+        $received = $options;
+    }) implements InputPlugin {
+        public function __construct(private Closure $capture) {}
+
+        public function resolve(SourceDescriptor $source): ResolvedInput
+        {
+            throw new RuntimeException('unused');
+        }
+
+        public function discover(string $inputId, DiscoveryIntent $intent, array $options = []): array
+        {
+            throw new RuntimeException('unused');
+        }
+
+        public function acquire(DiscoveredItem $item, AcquisitionOptions $options): AcquisitionResult
+        {
+            ($this->capture)($options);
+
+            return new AcquisitionResult();
+        }
+    };
+    $server = new InputPluginServer(static fn(): never => throw new RuntimeException('unused'));
+    $dispatch = new ReflectionMethod(InputPluginServer::class, 'dispatch');
+    $dispatch->invoke($server, $plugin, 'input.acquire', [
+        'item' => ['id' => 'video', 'reference' => 'https://youtube.com/watch?v=video', 'title' => 'Video'],
+        'media_kind' => 'video',
+        'credentials' => [
+            ['key' => 'youtube-cookies', 'value' => "cookie-line\n"],
+            ['key' => 'youtube-po-token', 'value' => 'fixture-token'],
+        ],
+    ]);
+    expect($received)->toBeInstanceOf(AcquisitionOptions::class)
+        ->and($received->credentials)->toBe(['youtube-cookies' => "cookie-line\n", 'youtube-po-token' => 'fixture-token'])
+        ->and(fn() => $dispatch->invoke($server, $plugin, 'input.acquire', [
+            'item' => ['id' => 'video', 'reference' => 'https://youtube.com/watch?v=video', 'title' => 'Video'],
+            'media_kind' => 'video',
+            'credentials' => [['key' => 'bad']],
+        ]))->toThrow(InvalidPluginResultException::class);
     $progressEvents = [];
     $progress = new RuntimeProgressReporter(static function (string $method, array $params) use (&$progressEvents): void {
         $progressEvents[] = [$method, $params];
