@@ -109,7 +109,8 @@ it('passes the SDK conformance checks', function (): void {
         throw new RuntimeException('sandbox/RPC mechanics leaked into SDK context');
     }
     expect((new PluginContext(new NullLogger()))->pluginDataPath)->toBe('/plugin-data')
-        ->and((new PluginContext(new NullLogger(), pluginDataPath: '/private-data'))->pluginDataPath)->toBe('/private-data');
+        ->and((new PluginContext(new NullLogger(), pluginDataPath: '/private-data'))->pluginDataPath)->toBe('/private-data')
+        ->and((new PluginContext(new NullLogger(), stagingPath: '/staging'))->stagingPath)->toBe('/staging');
     $received = null;
     $plugin = new class (static function (AcquisitionOptions $options) use (&$received): void {
         $received = $options;

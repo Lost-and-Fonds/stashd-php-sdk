@@ -26,7 +26,9 @@ unavailability with an explicit permanent flag.
 `PluginContext::pluginDataPath` points to the plugin's private writable,
 persistent directory (`/plugin-data` in the sandbox). It survives process
 invocations, application restarts, and package upgrades; staging remains
-temporary and package files remain read-only. Plugins own their data formats.
+temporary and package files remain read-only. `PluginContext::stagingPath`
+points to the invocation's temporary writable directory (`/staging` in the
+sandbox); it is not durable. Plugins own their data formats.
 `ProgressReporter::report()` can also carry an optional expected byte total;
 exact totals use `sizeEstimated: false`, estimates use `true`, and neither
 changes the factual size recorded for acquired assets.
