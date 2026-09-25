@@ -10,6 +10,7 @@ use Stashd\PluginSdk\ArtifactRole;
 use Stashd\PluginSdk\DiscoveryIntent;
 use Stashd\PluginSdk\InputOption;
 use Stashd\PluginSdk\InputPlugin;
+use Stashd\PluginSdk\HostCapabilityException;
 use Stashd\PluginSdk\InvalidPluginResultException;
 use Stashd\PluginSdk\MediaKind;
 use Stashd\PluginSdk\OptionValue;
@@ -38,7 +39,7 @@ final class InputPluginServer
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
 
             try {
-                $result = $this->dispatch($plugin, is_string($message['method'] ?? null) ? $message['method'] : '', is_array($message['params'] ?? null) ? $message['params'] : []);
+                $result = $this->dispatch($plugin, is_string($message['method'] ?? null) ? $message['method'] : '', RuntimeFrameCodec::object($message['params'] ?? null));
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
             } catch (PluginFailureException $exception) {
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure($exception->failure)]);
@@ -52,17 +53,39 @@ final class InputPluginServer
     }
 
     /**
-     * @param array<int|string, mixed> $params
+     * @param array<string, mixed> $params
      * @return array<int|string, mixed>
      */
     private function dispatch(InputPlugin $plugin, string $method, array $params): array
     {
         return match ($method) {
-            'input.resolve' => WireMapper::resolvedInput($plugin->resolve(WireMapper::sourceDescriptorFromWire($params['source'] ?? []))),
-            'input.discover' => WireMapper::discoveredItems($plugin->discover(is_string($params['input_id'] ?? null) ? $params['input_id'] : '', DiscoveryIntent::from(is_string($params['intent'] ?? null) ? $params['intent'] : 'refresh'), $this->options($params['options'] ?? []))),
-            'input.acquire' => WireMapper::acquisition($plugin->acquire(WireMapper::discoveredItemFromWire(RuntimeFrameCodec::object($params['item'] ?? [])), new AcquisitionOptions(MediaKind::from(is_string($params['media_kind'] ?? null) ? $params['media_kind'] : 'video'), $this->options($params['options'] ?? []), $this->artifactRoles($params['requested_roles'] ?? null), $this->credentials($params['credentials'] ?? [])))),
+            'input.resolve' => WireMapper::resolvedInput($plugin->resolve(WireMapper::sourceDescriptorFromWire($this->requiredList($params, 'source')))),
+            'input.discover' => WireMapper::discoveredItems($plugin->discover(
+                $this->requiredString($params, 'input-id'),
+                DiscoveryIntent::from($this->requiredString($params, 'intent')),
+                $this->options($this->requiredList($params, 'options')),
+            )),
+            'input.acquire' => WireMapper::acquisition($plugin->acquire(
+                WireMapper::discoveredItemFromWire($this->requiredObject($params, 'item')),
+                $this->acquisitionOptions($this->requiredObject($params, 'options')),
+            )),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
+    }
+
+    /** @param array<string, mixed> $values */
+    private function acquisitionOptions(array $values): AcquisitionOptions
+    {
+        if (! array_key_exists('requested-roles', $values) || ! array_key_exists('credentials', $values)) {
+            throw new InvalidPluginResultException('acquisition options omit a required option field');
+        }
+
+        return new AcquisitionOptions(
+            MediaKind::from($this->requiredString($values, 'media-kind')),
+            $this->options($this->requiredList($values, 'options')),
+            $this->artifactRoles($values['requested-roles']),
+            $this->credentials($values['credentials']),
+        );
     }
 
     /** @return list<ArtifactRole>|null */
@@ -72,26 +95,27 @@ final class InputPluginServer
             return null;
         }
 
-        if (! is_array($roles)) {
+        if (! is_array($roles) || ! array_is_list($roles)) {
             throw new InvalidPluginResultException('requested_roles must be a list');
         }
-
-        /** @var list<mixed> $roles */
-        $roles = array_values($roles);
 
         return array_map(static fn(mixed $role): ArtifactRole => ArtifactRole::from(is_string($role) ? $role : ''), $roles);
     }
 
-    /** @return array<string, string> */
-    private function credentials(mixed $credentials): array
+    /** @return array<string, string>|null */
+    private function credentials(mixed $credentials): ?array
     {
-        if (! is_array($credentials)) {
+        if ($credentials === null) {
+            return null;
+        }
+
+        if (! is_array($credentials) || ! array_is_list($credentials)) {
             throw new InvalidPluginResultException('credentials must be a list');
         }
         $result = [];
 
         foreach ($credentials as $credential) {
-            if (! is_array($credential) || ! is_string($credential['key'] ?? null) || trim($credential['key']) === '' || ! is_string($credential['value'] ?? null) || isset($result[$credential['key']])) {
+            if (! is_array($credential) || ! is_string($credential['key'] ?? null) || ! is_string($credential['value'] ?? null) || isset($result[$credential['key']])) {
                 throw new InvalidPluginResultException('credential is invalid');
             }
             $result[$credential['key']] = $credential['value'];
@@ -102,7 +126,7 @@ final class InputPluginServer
 
     private function context(): PluginContext
     {
-        $call = function (string $method, array $params, ?callable $onOutput = null): array {
+        $call = function (string $method, array $params): array {
             static $next = 1;
             /** @var int $next */
             $id = 'sdk-' . $next++;
@@ -110,11 +134,6 @@ final class InputPluginServer
 
             while (($message = RuntimeFrameCodec::read(STDIN, 300.0)) !== null) {
                 if (($message['kind'] ?? null) === 'notification') {
-                    if (($message['method'] ?? null) === 'helper.output' && $onOutput !== null) {
-                        $params = is_array($message['params'] ?? null) ? $message['params'] : [];
-                        $onOutput(is_string($params['channel'] ?? null) ? $params['channel'] : 'out', is_string($params['buffer'] ?? null) ? $params['buffer'] : '');
-                    }
-
                     continue;
                 }
 
@@ -123,6 +142,10 @@ final class InputPluginServer
                 }
 
                 if (is_array($message['error'] ?? null)) {
+                    if (is_string($message['error']['tag'] ?? null)) {
+                        throw new HostCapabilityException($method, $message['error']['tag'], $message['error']['value'] ?? null);
+                    }
+
                     throw new \RuntimeException(is_string($message['error']['message'] ?? null) ? $message['error']['message'] : 'capability failed');
                 }
 
@@ -132,7 +155,7 @@ final class InputPluginServer
             throw new \RuntimeException('host closed capability channel');
         };
 
-        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), new RuntimeHelperRunner($call), '/plugin-data', '/staging');
+        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call, false), new RuntimeHelperRunner($call), '/plugin-data', '/staging');
     }
 
     private function handshake(): void
@@ -155,7 +178,7 @@ final class InputPluginServer
      */
     private function options(mixed $values): array
     {
-        if (! is_array($values)) {
+        if (! is_array($values) || ! array_is_list($values)) {
             throw new InvalidPluginResultException('input options must be a list');
         }
         $options = [];
@@ -168,5 +191,48 @@ final class InputPluginServer
         }
 
         return $options;
+    }
+
+    /** @param array<string, mixed> $values */
+    private function requiredString(array $values, string $key): string
+    {
+        if (! is_string($values[$key] ?? null)) {
+            throw new InvalidPluginResultException("required string field is missing or malformed: {$key}");
+        }
+
+        return $values[$key];
+    }
+
+    /** @param array<string, mixed> $values
+     * @return list<array<string, mixed>>
+     */
+    private function requiredList(array $values, string $key): array
+    {
+        if (! array_key_exists($key, $values) || ! is_array($values[$key]) || ! array_is_list($values[$key])) {
+            throw new InvalidPluginResultException("required list field is missing or malformed: {$key}");
+        }
+
+        $result = [];
+
+        foreach ($values[$key] as $value) {
+            if (! is_array($value)) {
+                throw new InvalidPluginResultException("required list field contains a malformed record: {$key}");
+            }
+            $result[] = RuntimeFrameCodec::object($value);
+        }
+
+        return $result;
+    }
+
+    /** @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
+    private function requiredObject(array $values, string $key): array
+    {
+        if (! is_array($values[$key] ?? null) || array_is_list($values[$key])) {
+            throw new InvalidPluginResultException("required record is missing or malformed: {$key}");
+        }
+
+        return RuntimeFrameCodec::object($values[$key]);
     }
 }

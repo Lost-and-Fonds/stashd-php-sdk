@@ -6,11 +6,10 @@ namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\BroadcastPlugin;
 use Stashd\PluginSdk\FinalizationRequest;
+use Stashd\PluginSdk\HostCapabilityException;
 use Stashd\PluginSdk\OperationRequest;
 use Stashd\PluginSdk\PluginContext;
 use Stashd\PluginSdk\PluginRegistry;
-use Stashd\PluginSdk\StashCollection;
-use Stashd\PluginSdk\StashCollectionEntry;
 use Stashd\PluginSdk\Publication;
 use Stashd\PluginSdk\PublishRequest;
 use Stashd\PluginSdk\WireMapper;
@@ -43,7 +42,7 @@ final class PluginServer
             $id = is_string($message['id'] ?? null) ? $message['id'] : '';
 
             try {
-                $result = $this->dispatch(is_string($message['method'] ?? null) ? $message['method'] : '', is_array($message['params'] ?? null) ? $message['params'] : []);
+                $result = $this->dispatch(is_string($message['method'] ?? null) ? $message['method'] : '', RuntimeFrameCodec::object($message['params'] ?? null));
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'result' => $result]);
             } catch (PluginFailureException $exception) {
                 RuntimeFrameCodec::write(STDOUT, ['protocol' => 1, 'id' => $id, 'kind' => 'response', 'error' => WireMapper::pluginFailure($exception->failure)]);
@@ -69,45 +68,8 @@ final class PluginServer
             'broadcast.publish' => WireMapper::publication($this->registry->broadcastPlugin('default')->publish($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
             'broadcast.finalize' => WireMapper::publication($this->registry->broadcastPlugin('default')->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? [])), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
             'broadcast.operation' => WireMapper::operationResult($this->registry->broadcastPlugin('default')->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
-            'stash.collection.export' => $this->export(RuntimeFrameCodec::object($params), $context),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
-    }
-
-    /**
-     * @param array<string, mixed> $params
-     * @return array<string, string>
-     */
-    private function export(array $params, PluginContext $context): array
-    {
-        $exporter = $this->registry->collectionExporterFor($this->requiredString($params, 'exporter'));
-        $entries = [];
-
-        foreach (is_array($params['entries'] ?? null) ? $params['entries'] : [] as $entry) {
-            $entry = RuntimeFrameCodec::object($entry);
-            $entries[] = new StashCollectionEntry(
-                $this->requiredString($entry, 'stash-name'),
-                $this->requiredString($entry, 'broadcast-key'),
-                $this->requiredString($entry, 'broadcast-name'),
-                $this->requiredString($entry, 'public-url'),
-            );
-        }
-
-        $file = $exporter->export(new StashCollection($entries), $context);
-
-        return ['filename' => $file->filename, 'content-type' => $file->contentType, 'contents' => $file->contents];
-    }
-
-    /** @param array<string, mixed> $values */
-    private function requiredString(array $values, string $key): string
-    {
-        $value = $values[$key] ?? null;
-
-        if (! is_string($value) || $value === '') {
-            throw new \RuntimeException("Missing string value: {$key}");
-        }
-
-        return $value;
     }
 
     private function context(): PluginContext
@@ -124,6 +86,10 @@ final class PluginServer
                 }
 
                 if (is_array($message['error'] ?? null)) {
+                    if (is_string($message['error']['tag'] ?? null)) {
+                        throw new HostCapabilityException($method, $message['error']['tag'], $message['error']['value'] ?? null);
+                    }
+
                     throw new \RuntimeException(is_string($message['error']['message'] ?? null) ? $message['error']['message'] : 'capability failed');
                 }
 
@@ -135,7 +101,7 @@ final class PluginServer
 
         $helpers = new RuntimeHelperRunner($call);
 
-        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers, '/plugin-data', '/staging');
+        return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call, false), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers, '/plugin-data', '/staging');
     }
 
     /** @param array<string, mixed> $data */

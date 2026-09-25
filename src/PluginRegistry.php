@@ -14,9 +14,6 @@ final class PluginRegistry
     /** @var array<string, InputPlugin> */
     private array $inputs = [];
 
-    /** @var array<string, StashCollectionExporter> */
-    private array $collectionExporters = [];
-
     public function broadcast(string $id, BroadcastPlugin $plugin): void
     {
         $this->broadcasts[$id] = $plugin;
@@ -25,16 +22,6 @@ final class PluginRegistry
     public function input(string $id, InputPlugin $plugin): void
     {
         $this->inputs[$id] = $plugin;
-    }
-
-    public function collectionExporter(string $id, StashCollectionExporter $exporter): void
-    {
-        $this->collectionExporters[$id] = $exporter;
-    }
-
-    public function collectionExporterFor(string $id): StashCollectionExporter
-    {
-        return $this->collectionExporters[$id] ?? throw new RuntimeException("Unknown collection exporter: $id");
     }
 
     public function broadcastPlugin(string $id): BroadcastPlugin

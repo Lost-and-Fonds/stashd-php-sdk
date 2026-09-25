@@ -65,10 +65,15 @@ final class RuntimeFrameCodec
         if (strlen($payload) !== $length) {
             throw new RuntimeException('plugin IPC frame is truncated');
         }
+        $decoded = json_decode($payload, false, 512, JSON_THROW_ON_ERROR);
+
+        if (! $decoded instanceof \stdClass) {
+            throw new RuntimeException('plugin IPC message is not an object');
+        }
         $message = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 
         if (! is_array($message)) {
-            throw new RuntimeException('plugin IPC message is not an object');
+            throw new RuntimeException('plugin IPC message could not be decoded as an object');
         }
 
         $result = [];

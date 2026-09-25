@@ -20,6 +20,8 @@ final class WireMapper
     /** @return array<string, mixed> */
     public static function publication(Publication $publication): array
     {
+        self::assertUnsigned($publication->artifact->sizeBytes);
+
         return [
             'artifact' => ['reference' => $publication->artifact->reference, 'media-type' => $publication->artifact->mediaType, 'size-bytes' => $publication->artifact->sizeBytes],
             'files' => array_map(static fn(PublishedFile $file): array => ['item-id' => $file->itemId, 'source-reference' => $file->sourceReference, 'relative-path' => $file->relativePath], $publication->files),
@@ -44,7 +46,11 @@ final class WireMapper
             throw new InvalidPluginResultException('staging returned an unknown artifact role');
         }
 
-        return ['reference' => $artifact->reference, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes, 'role' => $artifact->role, 'language' => $artifact->language];
+        if ($artifact->sizeBytes < 0) {
+            throw new InvalidPluginResultException('staging returned a negative artifact size');
+        }
+
+        return ['reference' => $artifact->reference, 'role' => $artifact->role, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes];
     }
 
     /** @param array<array-key, mixed> $data */
@@ -52,32 +58,31 @@ final class WireMapper
     {
         return new PublishRequest(
             self::requiredString($data, 'reference'),
-            self::settingsFromWire($data['settings'] ?? []),
-            array_map(static fn(array $source): Source => new Source(self::requiredString($source, 'reference'), self::settingsFromWire($source['settings'] ?? [])), self::listOfArrays($data['sources'] ?? [])),
+            self::settingsFromWire(self::requiredField($data, 'settings')),
+            array_map(static fn(array $source): Source => new Source(self::requiredString($source, 'reference'), self::settingsFromWire(self::requiredField($source, 'settings'))), self::listOfArrays(self::requiredField($data, 'sources'))),
             array_map(static fn(array $item): Item => new Item(
                 self::requiredString($item, 'id'),
                 self::requiredString($item, 'title'),
                 array_map(static fn(array $resource): ItemResource => new ItemResource(
                     self::requiredString($resource, 'reference'),
                     self::requiredString($resource, 'kind'),
-                    isset($resource['derivation-key']) ? self::optionalString($resource['derivation-key']) : null,
-                    isset($resource['url']) ? self::optionalString($resource['url']) : null,
-                    isset($resource['media-type']) ? self::optionalString($resource['media-type']) : null,
-                    self::intValue($resource['size-bytes'] ?? null),
-                    isset($resource['language']) ? self::optionalString($resource['language']) : null,
-                ), self::listOfArrays($item['resources'] ?? [])),
-                isset($item['source-reference']) ? self::optionalString($item['source-reference']) : null,
-                isset($item['description']) ? self::optionalString($item['description']) : null,
-                isset($item['published-at']) ? self::optionalString($item['published-at']) : null,
-                isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null,
-            ), self::listOfArrays($data['items'] ?? [])),
+                    self::optionalString(self::requiredField($resource, 'derivation-key')),
+                    self::optionalString(self::requiredField($resource, 'url')),
+                    self::optionalString(self::requiredField($resource, 'media-type')),
+                    self::unsignedValue(self::requiredField($resource, 'size-bytes')),
+                ), self::listOfArrays(self::requiredField($item, 'resources'))),
+                self::optionalString(self::requiredField($item, 'source-reference')),
+                self::optionalString(self::requiredField($item, 'description')),
+                self::optionalString(self::requiredField($item, 'published-at')),
+                self::optionalU32Field($item, 'duration-seconds'),
+            ), self::listOfArrays(self::requiredField($data, 'items'))),
         );
     }
 
     /** @param array<array-key, mixed> $data */
     public static function operationRequestFromWire(array $data): OperationRequest
     {
-        return new OperationRequest(self::requiredString($data, 'name'), self::settingsFromWire($data['settings'] ?? []), self::settingsFromWire($data['payload'] ?? []));
+        return new OperationRequest(self::requiredString($data, 'name'), self::settingsFromWire(self::requiredField($data, 'settings')), self::settingsFromWire(self::requiredField($data, 'payload')));
     }
 
     /** @param array<string, mixed> $data */
@@ -86,20 +91,28 @@ final class WireMapper
         $artifact = self::requiredArray($data, 'artifact');
 
         return new Publication(
-            new Artifact(self::requiredString($artifact, 'reference'), isset($artifact['media-type']) ? self::optionalString($artifact['media-type']) : null, self::intValue($artifact['size-bytes'] ?? null)),
-            array_map(static fn(array $file): PublishedFile => new PublishedFile(self::requiredString($file, 'item-id'), self::requiredString($file, 'source-reference'), self::requiredString($file, 'relative-path')), self::listOfArrays($data['files'] ?? [])),
-            self::settingsFromWire($data['published-metadata'] ?? []),
+            new Artifact(self::requiredString($artifact, 'reference'), self::optionalString(self::requiredField($artifact, 'media-type')), self::unsignedValue(self::requiredField($artifact, 'size-bytes'))),
+            array_map(static fn(array $file): PublishedFile => new PublishedFile(self::requiredString($file, 'item-id'), self::requiredString($file, 'source-reference'), self::requiredString($file, 'relative-path')), self::listOfArrays(self::requiredField($data, 'files'))),
+            self::settingsFromWire(self::requiredField($data, 'published-metadata')),
         );
     }
 
     /** @return array<string,mixed> */
     public static function preparation(Preparation $preparation): array
     {
-        return ['artifacts' => array_map(static fn(DerivedArtifact $artifact): array => [
-            'item-id' => $artifact->itemId, 'reference' => $artifact->reference,
-            'derived-from-reference' => $artifact->derivedFromReference, 'derivation-key' => $artifact->derivationKey,
-            'kind' => $artifact->kind, 'media-type' => $artifact->mediaType, 'size-bytes' => $artifact->sizeBytes,
-        ], $preparation->artifacts)];
+        return ['artifacts' => array_map(static function (DerivedArtifact $artifact): array {
+            self::assertUnsigned($artifact->sizeBytes);
+
+            return [
+                'item-id' => $artifact->itemId,
+                'reference' => $artifact->reference,
+                'derived-from-reference' => $artifact->derivedFromReference,
+                'derivation-key' => $artifact->derivationKey,
+                'kind' => $artifact->kind,
+                'media-type' => $artifact->mediaType,
+                'size-bytes' => $artifact->sizeBytes,
+            ];
+        }, $preparation->artifacts)];
     }
 
     /** @return array<string,mixed> */
@@ -111,6 +124,9 @@ final class WireMapper
     /** @return array<string,mixed> */
     public static function resolvedInput(ResolvedInput $input): array
     {
+        self::assertU32($input->estimatedItemCount);
+        self::assertUnsigned($input->sizeBytes);
+
         return ['id' => $input->id, 'canonical-reference' => $input->canonicalReference, 'kind' => $input->kind, 'title' => $input->title, 'artwork-reference' => $input->artworkReference, 'estimated-item-count' => $input->estimatedItemCount, 'size-bytes' => $input->sizeBytes, 'size-estimated' => $input->sizeEstimated];
     }
 
@@ -149,6 +165,9 @@ final class WireMapper
     /** @return array<string, mixed> */
     public static function discoveredItem(DiscoveredItem $item): array
     {
+        self::assertU32($item->durationSeconds);
+        self::assertUnsigned($item->sizeBytes);
+
         return ['id' => $item->id, 'reference' => $item->reference, 'title' => $item->title, 'description' => $item->description, 'published-at' => $item->publishedAt, 'artwork-reference' => $item->artworkReference, 'duration-seconds' => $item->durationSeconds, 'kind' => $item->kind, 'size-bytes' => $item->sizeBytes, 'size-estimated' => $item->sizeEstimated, 'upstream-state' => $item->upstreamState];
     }
 
@@ -164,7 +183,19 @@ final class WireMapper
     /** @param array<string, mixed> $item */
     public static function discoveredItemFromWire(array $item): DiscoveredItem
     {
-        return new DiscoveredItem(self::requiredString($item, 'id'), self::requiredString($item, 'reference'), self::requiredString($item, 'title'), isset($item['description']) ? self::optionalString($item['description']) : null, isset($item['published-at']) ? self::optionalString($item['published-at']) : null, isset($item['artwork-reference']) ? self::optionalString($item['artwork-reference']) : null, isset($item['duration-seconds']) ? self::intValue($item['duration-seconds']) : null, isset($item['kind']) ? self::optionalString($item['kind']) : null, isset($item['size-bytes']) ? self::intValue($item['size-bytes']) : null, is_bool($item['size-estimated'] ?? null) ? $item['size-estimated'] : false, isset($item['upstream-state']) ? self::optionalString($item['upstream-state']) : null);
+        return new DiscoveredItem(
+            self::requiredString($item, 'id'),
+            self::requiredString($item, 'reference'),
+            self::requiredString($item, 'title'),
+            self::optionalString(self::requiredField($item, 'description')),
+            self::optionalString(self::requiredField($item, 'published-at')),
+            self::optionalString(self::requiredField($item, 'artwork-reference')),
+            self::optionalU32Field($item, 'duration-seconds'),
+            self::optionalString(self::requiredField($item, 'kind')),
+            self::optionalUnsignedField($item, 'size-bytes'),
+            self::requiredBool($item, 'size-estimated'),
+            self::optionalString(self::requiredField($item, 'upstream-state')),
+        );
     }
 
     /**
@@ -189,7 +220,7 @@ final class WireMapper
      */
     private static function listOfArrays(mixed $values): array
     {
-        if (! is_array($values)) {
+        if (! is_array($values) || ! array_is_list($values)) {
             throw new InvalidPluginResultException('expected a list');
         }
 
@@ -257,11 +288,82 @@ final class WireMapper
             return $value;
         }
 
-        if (is_float($value) && is_finite($value) && floor($value) === $value) {
-            return (int) $value;
+        throw new InvalidPluginResultException('integer field is malformed');
+    }
+
+    /** @param array<array-key, mixed> $data */
+    private static function requiredField(array $data, string $key): mixed
+    {
+        if (! array_key_exists($key, $data)) {
+            throw new InvalidPluginResultException("required field is missing: {$key}");
         }
 
-        throw new InvalidPluginResultException('integer field is malformed');
+        return $data[$key];
+    }
+
+    /** @param array<array-key, mixed> $data */
+    private static function requiredBool(array $data, string $key): bool
+    {
+        $value = self::requiredField($data, $key);
+
+        if (! is_bool($value)) {
+            throw new InvalidPluginResultException("required boolean field is malformed: {$key}");
+        }
+
+        return $value;
+    }
+
+    private static function unsignedValue(mixed $value): int
+    {
+        $value = self::intValue($value);
+
+        if ($value < 0) {
+            throw new InvalidPluginResultException('unsigned integer field is malformed');
+        }
+
+        return $value;
+    }
+
+    /** @param array<array-key, mixed> $data */
+    private static function optionalUnsignedField(array $data, string $key): ?int
+    {
+        $value = self::requiredField($data, $key);
+
+        return $value === null ? null : self::unsignedValue($value);
+    }
+
+    /** @param array<array-key, mixed> $data */
+    private static function optionalU32Field(array $data, string $key): ?int
+    {
+        $value = self::requiredField($data, $key);
+
+        if ($value === null) {
+            return null;
+        }
+
+        $value = self::unsignedValue($value);
+
+        if ($value > 4_294_967_295) {
+            throw new InvalidPluginResultException('u32 field is outside its range');
+        }
+
+        return $value;
+    }
+
+    private static function assertU32(?int $value): void
+    {
+        self::assertUnsigned($value);
+
+        if ($value !== null && $value > 4_294_967_295) {
+            throw new InvalidPluginResultException('u32 field is outside its range');
+        }
+    }
+
+    private static function assertUnsigned(?int $value): void
+    {
+        if ($value !== null && $value < 0) {
+            throw new InvalidPluginResultException('unsigned integer field is malformed');
+        }
     }
 
     /** @return array<string, mixed> */
@@ -279,6 +381,8 @@ final class WireMapper
     /** @return array<string, mixed> */
     private static function item(Item $item): array
     {
+        self::assertU32($item->durationSeconds);
+
         return [
             'id' => $item->id,
             'source-reference' => $item->sourceReference,
@@ -286,10 +390,18 @@ final class WireMapper
             'description' => $item->description,
             'published-at' => $item->publishedAt,
             'duration-seconds' => $item->durationSeconds,
-            'resources' => array_map(static fn(ItemResource $resource): array => [
-                'reference' => $resource->reference, 'kind' => $resource->kind, 'derivation-key' => $resource->derivationKey,
-                'url' => $resource->url, 'media-type' => $resource->mediaType, 'size-bytes' => $resource->sizeBytes, 'language' => $resource->language,
-            ], $item->resources),
+            'resources' => array_map(static function (ItemResource $resource): array {
+                self::assertUnsigned($resource->sizeBytes);
+
+                return [
+                    'reference' => $resource->reference,
+                    'kind' => $resource->kind,
+                    'derivation-key' => $resource->derivationKey,
+                    'url' => $resource->url,
+                    'media-type' => $resource->mediaType,
+                    'size-bytes' => $resource->sizeBytes,
+                ];
+            }, $item->resources),
         ];
     }
 }

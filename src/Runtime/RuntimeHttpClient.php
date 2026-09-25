@@ -7,6 +7,7 @@ namespace Stashd\PluginSdk\Runtime;
 use Closure;
 use Stashd\PluginSdk\HttpClient;
 use Stashd\PluginSdk\HttpResponse;
+use Stashd\PluginSdk\InvalidPluginResultException;
 
 final readonly class RuntimeHttpClient implements HttpClient
 {
@@ -15,31 +16,60 @@ final readonly class RuntimeHttpClient implements HttpClient
 
     public function request(string $method, string $url, array $headers = [], ?string $body = null, ?string $credential = null): HttpResponse
     {
+        $method = strtolower($method);
+
+        if (! in_array($method, ['get', 'post', 'put', 'patch', 'delete'], true)) {
+            throw new \InvalidArgumentException('HTTP method is not part of the plugin contract.');
+        }
+
         $result = ($this->call)('http.request', [
-            'method' => strtoupper($method), 'url' => $url, 'headers' => $headers,
-            'body' => $body, 'credential' => $credential,
+            'method' => $method, 'url' => $url, 'headers' => array_map(
+                static fn(string $name, string $value): array => ['name' => $name, 'value' => $value],
+                array_keys($headers),
+                array_values($headers),
+            ),
+            'body' => $body === null ? [] : array_values(unpack('C*', $body) ?: []),
+            'credential' => $credential,
         ]);
 
-        if (! is_array($result)) {
-            return new HttpResponse(0, [], null);
+        if (! is_array($result)
+            || ! is_int($result['status'] ?? null)
+            || $result['status'] < 0
+            || $result['status'] > 65_535
+            || ! array_key_exists('headers', $result)
+            || ! is_array($result['headers'])
+            || ! array_is_list($result['headers'])
+            || ! array_key_exists('body', $result)
+            || ! is_array($result['body'])
+            || ! array_is_list($result['body'])
+            || array_key_exists('resource', $result)) {
+            throw new InvalidPluginResultException('HTTP capability returned an invalid response.');
         }
-        $resource = isset($result['resource']) && is_string($result['resource'])
-            ? new RuntimeReadableResource($this->call, $result['resource'])
-            : null;
 
         $responseHeaders = [];
 
-        foreach (is_array($result['headers'] ?? null) ? $result['headers'] : [] as $name => $value) {
-            if (is_string($name) && is_string($value)) {
-                $responseHeaders[$name] = $value;
+        foreach ($result['headers'] as $header) {
+            if (! is_array($header) || ! is_string($header['name'] ?? null) || ! is_string($header['value'] ?? null)) {
+                throw new InvalidPluginResultException('HTTP capability returned an invalid header.');
             }
+
+            $responseHeaders[$header['name']] = $header['value'];
+        }
+
+        $bodyBytes = '';
+
+        foreach ($result['body'] as $byte) {
+            if (! is_int($byte) || $byte < 0 || $byte > 255) {
+                throw new InvalidPluginResultException('HTTP capability returned an invalid body byte.');
+            }
+
+            $bodyBytes .= chr($byte);
         }
 
         return new HttpResponse(
-            is_int($result['status'] ?? null) ? $result['status'] : 0,
+            $result['status'],
             $responseHeaders,
-            is_scalar($result['body'] ?? null) ? (string) $result['body'] : null,
-            $resource,
+            $bodyBytes,
         );
     }
 }

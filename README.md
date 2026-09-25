@@ -29,9 +29,9 @@ invocations, application restarts, and package upgrades; staging remains
 temporary and package files remain read-only. `PluginContext::stagingPath`
 points to the invocation's temporary writable directory (`/staging` in the
 sandbox); it is not durable. Plugins own their data formats.
-`ProgressReporter::report()` can also carry an optional expected byte total;
-exact totals use `sizeEstimated: false`, estimates use `true`, and neither
-changes the factual size recorded for acquired assets.
+`ProgressReporter::report()` carries a stage and an optional fraction, matching
+the current WIT progress records. Input hosts also accept discovered-item
+reports; Broadcast hosts expose progress and logging only.
 
 The current binding targets `stashd:plugin@0.2.0`. RPC v1 remains a
 four-byte big-endian length-prefixed UTF-8 JSON stream. Typed
@@ -39,3 +39,5 @@ four-byte big-endian length-prefixed UTF-8 JSON stream. Typed
 error variant; ordinary exceptions become `failed` with `retryable: false`.
 
 See `examples/minimal-broadcast/` for the smallest complete plugin shape.
+
+Run the SDK contract tests with `composer test`.

@@ -6,7 +6,5 @@ namespace Stashd\PluginSdk;
 
 interface Logger
 {
-    public function info(string $message): void;
-
-    public function error(string $message): void;
+    public function log(string $message): void;
 }

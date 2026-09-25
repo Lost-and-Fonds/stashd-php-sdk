@@ -11,15 +11,22 @@
   "require-dev": {
     "phpstan/phpstan": "^2.2",
     "friendsofphp/php-cs-fixer": "^3.95",
-    "squizlabs/php_codesniffer": "^4.0"
+    "squizlabs/php_codesniffer": "^4.0",
+    "pestphp/pest": "^3.8"
   },
   "autoload": {
     "psr-4": {
       "Stashd\\PluginSdk\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Stashd\\PluginSdk\\Tests\\": "tests/"
+    }
+  },
   "scripts": {
     "format": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php",
+    "test": "vendor/bin/pest",
     "lint": [
       "composer dump-autoload --optimize --strict-psr --dry-run",
       "vendor/bin/php-cs-fixer check --allow-risky=yes --config=.php-cs-fixer.dist.php"
@@ -33,6 +40,8 @@
     }
   ],
   "config": {
-    "allow-plugins": {}
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
   }
 }

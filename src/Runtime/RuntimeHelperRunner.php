@@ -14,25 +14,27 @@ final readonly class RuntimeHelperRunner implements HelperRunner
     /** @param Closure $call */
     public function __construct(private Closure $call) {}
 
-    /** @param list<string> $arguments
-     * @param callable(string, string): void|null $onOutput
-     */
-    public function run(string $name, array $arguments = [], ?callable $onOutput = null): HelperResult
+    /** @param list<string> $arguments */
+    public function run(string $name, array $arguments = []): HelperResult
     {
-        $result = ($this->call)('helper.run', ['name' => $name, 'arguments' => $arguments], $onOutput);
+        $result = ($this->call)('helper.run', ['name' => $name, 'args' => $arguments]);
 
         if (! is_array($result)) {
             throw new RuntimeException('Plugin helper returned an invalid response.');
         }
 
-        if (! is_int($result['exit_code'] ?? null)) {
-            throw new RuntimeException('Plugin helper returned an invalid exit code.');
+        if (! is_int($result['exit-code'] ?? null)
+            || $result['exit-code'] < -2_147_483_648
+            || $result['exit-code'] > 2_147_483_647
+            || ! is_string($result['stdout'] ?? null)
+            || ! is_string($result['stderr'] ?? null)) {
+            throw new RuntimeException('Plugin helper returned an invalid result.');
         }
 
         return new HelperResult(
-            $result['exit_code'],
-            is_string($result['stdout'] ?? null) ? $result['stdout'] : '',
-            is_string($result['stderr'] ?? null) ? $result['stderr'] : '',
+            $result['exit-code'],
+            $result['stdout'],
+            $result['stderr'],
         );
     }
 }
