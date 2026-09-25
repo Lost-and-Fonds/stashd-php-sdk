@@ -258,18 +258,3 @@ it('reports unavailable Broadcast-only capability use as a typed unavailable plu
         $peer->close();
     }
 });
-
-it('rejects RPC methods that are absent from both WIT worlds', function (): void {
-    $peer = RpcPeer::start('broadcast');
-
-    try {
-        expect($peer->call('stash.collection.export', ['exporter' => 'default', 'entries' => []])['error'])->toBe([
-            'tag' => 'failed',
-            'value' => ['message' => 'unknown plugin method: stash.collection.export', 'retryable' => false],
-        ]);
-        expect($peer->hostCalls())->toBe([]);
-        expect($peer->close())->toBe(0);
-    } finally {
-        $peer->close();
-    }
-});

@@ -23,6 +23,11 @@ artwork, and caption roles without provider types. `AcquisitionOptions` can
 request a subset of those roles, and `AcquisitionResult` reports role-scoped
 unavailability with an explicit permanent flag.
 
+Collection exporters register a key and label, receive generic collection
+metadata, entries, and option values through the framed RPC boundary, and
+return a filename, media type, and byte content. The collection-export host
+exposes logging only.
+
 `PluginContext::pluginDataPath` points to the plugin's private writable,
 persistent directory (`/plugin-data` in the sandbox). It survives process
 invocations, application restarts, and package upgrades; staging remains

@@ -12,6 +12,7 @@ use Stashd\PluginSdk\Choice;
 use Stashd\PluginSdk\DerivedArtifact;
 use Stashd\PluginSdk\DiscoveredItem;
 use Stashd\PluginSdk\DiscoveryIntent;
+use Stashd\PluginSdk\ExportedFile;
 use Stashd\PluginSdk\FinalizationRequest;
 use Stashd\PluginSdk\HostCapabilityException;
 use Stashd\PluginSdk\InputPlugin;
@@ -27,6 +28,7 @@ use Stashd\PluginSdk\PluginError;
 use Stashd\PluginSdk\PluginErrorCode;
 use Stashd\PluginSdk\PluginFailure;
 use Stashd\PluginSdk\PluginFailureException;
+use Stashd\PluginSdk\PluginRegistry;
 use Stashd\PluginSdk\Preparation;
 use Stashd\PluginSdk\Publication;
 use Stashd\PluginSdk\PublishRequest;
@@ -36,6 +38,9 @@ use Stashd\PluginSdk\Runtime\PluginServer;
 use Stashd\PluginSdk\Setting;
 use Stashd\PluginSdk\SourceDescriptor;
 use Stashd\PluginSdk\StagedArtifact;
+use Stashd\PluginSdk\StashCollection;
+use Stashd\PluginSdk\StashCollectionEntry;
+use Stashd\PluginSdk\StashCollectionExporter;
 use Stashd\PluginSdk\UnavailableArtifact;
 use Stashd\PluginSdk\WireMapper;
 
@@ -176,6 +181,58 @@ if ($world === 'broadcast') {
             return new OperationResult([new Choice('yes', 'Yes')], [new Setting('enabled', OptionValue::boolean(false))]);
         }
     }))->run();
+}
+
+if ($world === 'collection-export') {
+    $registry = new PluginRegistry();
+
+    foreach (['default', 'typed', 'panic'] as $key) {
+        $registry->collectionExporter($key, new class ($key) implements StashCollectionExporter {
+            public function __construct(private string $id) {}
+
+            public function key(): string
+            {
+                return $this->id;
+            }
+
+            public function label(): string
+            {
+                return $this->id;
+            }
+
+            public function export(StashCollection $collection, PluginContext $context): ExportedFile
+            {
+                if ($this->id === 'typed') {
+                    throw new PluginFailureException(new PluginFailure(PluginErrorCode::RateLimited, new PluginError('try later', true)));
+                }
+
+                if ($this->id === 'panic') {
+                    throw new RuntimeException('unexpected');
+                }
+
+                $message = json_encode([
+                    'reference' => $collection->reference,
+                    'title' => $collection->title,
+                    'entries' => array_map(static fn(StashCollectionEntry $entry): array => [
+                        $entry->stashName,
+                        $entry->broadcastKey,
+                        $entry->broadcastName,
+                        $entry->publicUrl,
+                    ], $collection->entries),
+                    'options' => array_map(static fn(Setting $setting): array => [$setting->key, $setting->value->toWire()], $collection->options),
+                ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+                if (! is_string($message)) {
+                    throw new RuntimeException('could not encode collection export fixture input');
+                }
+                $context->logger->log($message);
+
+                return new ExportedFile('collection.bin', 'application/octet-stream', "\x00é\xff");
+            }
+        });
+    }
+
+    (new PluginServer($registry))->run();
 }
 
 throw new RuntimeException('unknown fixture world');

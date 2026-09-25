@@ -35,6 +35,54 @@ final class WireMapper
         return ['tag' => $failure->code->value, 'value' => ['message' => $failure->error->message, 'retryable' => $failure->error->retryable]];
     }
 
+    /**
+     * @param array<array-key, mixed> $data
+     * @return array{exporter: string, collection: StashCollection}
+     */
+    public static function collectionExportRequestFromWire(array $data): array
+    {
+        $collection = self::requiredArray($data, 'collection');
+
+        foreach (['reference', 'title', 'entries'] as $field) {
+            if (! array_key_exists($field, $collection)) {
+                throw new InvalidPluginResultException("required collection field is missing: {$field}");
+            }
+        }
+
+        $entries = array_map(static fn(array $entry): StashCollectionEntry => new StashCollectionEntry(
+            self::requiredString($entry, 'title'),
+            self::requiredString($entry, 'kind'),
+            self::requiredString($entry, 'label'),
+            self::requiredString($entry, 'reference'),
+        ), self::listOfArrays($collection['entries']));
+
+        return [
+            'exporter' => self::requiredString($data, 'exporter'),
+            'collection' => new StashCollection(
+                $entries,
+                self::optionalString($collection['reference']),
+                self::optionalString($collection['title']),
+                self::settingsFromWire($data['options'] ?? null),
+            ),
+        ];
+    }
+
+    /** @return array{filename: string, media-type: string, contents: list<int>} */
+    public static function exportedArtifact(ExportedFile $file): array
+    {
+        $contents = [];
+
+        for ($offset = 0, $length = strlen($file->contents); $offset < $length; ++$offset) {
+            $contents[] = ord($file->contents[$offset]);
+        }
+
+        return [
+            'filename' => $file->filename,
+            'media-type' => $file->contentType,
+            'contents' => $contents,
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function stagedArtifact(?StagedArtifact $artifact): array
     {

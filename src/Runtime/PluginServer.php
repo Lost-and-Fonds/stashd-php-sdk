@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\BroadcastPlugin;
+use Stashd\PluginSdk\CapabilityUnavailableException;
 use Stashd\PluginSdk\FinalizationRequest;
 use Stashd\PluginSdk\HostCapabilityException;
+use Stashd\PluginSdk\NullProgressReporter;
 use Stashd\PluginSdk\OperationRequest;
 use Stashd\PluginSdk\PluginContext;
-use Stashd\PluginSdk\PluginRegistry;
-use Stashd\PluginSdk\Publication;
-use Stashd\PluginSdk\PublishRequest;
-use Stashd\PluginSdk\WireMapper;
-use Stashd\PluginSdk\CapabilityUnavailableException;
 use Stashd\PluginSdk\PluginError;
 use Stashd\PluginSdk\PluginErrorCode;
 use Stashd\PluginSdk\PluginFailure;
 use Stashd\PluginSdk\PluginFailureException;
+use Stashd\PluginSdk\PluginRegistry;
+use Stashd\PluginSdk\Publication;
+use Stashd\PluginSdk\PublishRequest;
+use Stashd\PluginSdk\WireMapper;
+use Stashd\PluginSdk\UnavailableHttpClient;
 use Throwable;
 
 final class PluginServer
@@ -61,15 +63,28 @@ final class PluginServer
      */
     private function dispatch(string $method, array $params): array
     {
-        $context = $this->context();
+        $collectionExport = $method === 'collection-export.export-collection';
+        $context = $collectionExport ? $this->collectionExportContext() : $this->context();
 
         return match ($method) {
             'broadcast.prepare' => WireMapper::preparation($this->registry->broadcastPlugin('default')->prepare($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
             'broadcast.publish' => WireMapper::publication($this->registry->broadcastPlugin('default')->publish($this->publishRequest(RuntimeFrameCodec::object($params)), $context)),
             'broadcast.finalize' => WireMapper::publication($this->registry->broadcastPlugin('default')->finalize(new FinalizationRequest($this->publishRequest(RuntimeFrameCodec::object($params['request'] ?? [])), $this->publication(RuntimeFrameCodec::object($params['publication'] ?? []))), $context)),
             'broadcast.operation' => WireMapper::operationResult($this->registry->broadcastPlugin('default')->operation($this->operationRequest(RuntimeFrameCodec::object($params)), $context)),
+            'collection-export.export-collection' => $this->exportCollection($params, $context),
             default => throw new \RuntimeException('unknown plugin method: ' . $method),
         };
+    }
+
+    /** @param array<array-key, mixed> $params
+     * @return array{filename: string, media-type: string, contents: list<int>}
+     */
+    private function exportCollection(array $params, PluginContext $context): array
+    {
+        $request = WireMapper::collectionExportRequestFromWire($params);
+        $exporter = $this->registry->collectionExporterFor($request['exporter']);
+
+        return WireMapper::exportedArtifact($exporter->export($request['collection'], $context));
     }
 
     private function context(): PluginContext
@@ -102,6 +117,13 @@ final class PluginServer
         $helpers = new RuntimeHelperRunner($call);
 
         return new PluginContext(new RuntimeLogger($call), new RuntimeProgressReporter($call, false), new RuntimeHttpClient($call), new RuntimeStagingArea($call), $helpers, '/plugin-data', '/staging');
+    }
+
+    private function collectionExportContext(): PluginContext
+    {
+        $context = $this->context();
+
+        return new PluginContext($context->logger, new NullProgressReporter(), new UnavailableHttpClient(), null, null, '', null);
     }
 
     /** @param array<string, mixed> $data */
