@@ -1,9 +1,9 @@
 {
   "name": "stashd/php-sdk",
-  "description": "PHP authoring SDK for Stashd plugins",
+  "description": "PHP 8.5 authoring SDK for the Stashd plugin contract",
   "type": "library",
   "license": "MIT",
-  "version": "0.3.7",
+  "version": "0.4.0-dev",
   "require": {
     "php": "^8.5",
     "stashd/plugin-api": "^0.2.2"
@@ -23,8 +23,20 @@
     "test": "vendor/bin/pest",
     "test:static": "vendor/bin/phpstan analyse",
     "format": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php",
-    "lint": ["composer dump-autoload --optimize --strict-psr --dry-run", "vendor/bin/php-cs-fixer check --allow-risky=yes --config=.php-cs-fixer.dist.php"]
+    "lint": [
+      "composer dump-autoload --optimize --strict-psr --dry-run",
+      "vendor/bin/php-cs-fixer check --allow-risky=yes --config=.php-cs-fixer.dist.php"
+    ]
   },
-  "repositories": [{"type": "vcs", "url": "https://github.com/Lost-and-Fonds/plugin-api.git"}],
-  "config": {"allow-plugins": {"pestphp/pest-plugin": true}}
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/Lost-and-Fonds/plugin-api.git"
+    }
+  ],
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
 }
