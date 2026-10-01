@@ -126,6 +126,21 @@ Do not let `src/` become a flat junk drawer again. Only primary interaction poin
 
 ## Documentation audience and generation rules
 
+Public author-facing documentation and example code MUST use simple, direct English suitable for a developer who has never used Stashd before and may speak English as a second language.
+
+For public SDK PHPDoc, READMEs, starter plugins, tutorials, and examples:
+
+- prefer short sentences and common words;
+- explain what something does before explaining how it is implemented;
+- define Stashd-specific terms when the reader first needs them;
+- avoid internal architecture language such as RPC, WIT, wire, lifecycle, host capability, resource handle, author-facing surface, or contract representation unless that detail is necessary for the task being explained;
+- do not write as if the reader followed the SDK's design process;
+- do not refer to implementation tradeoffs that only SDK maintainers need to know;
+- prefer concrete verbs such as “save”, “find”, “publish”, “read”, “write”, and “return” over abstract phrases such as “execute the lifecycle” or “consume the selected collection”;
+- keep precision where it matters, but do not use specialist language merely because the implementation uses it.
+
+A useful test is: a PHP developer seeing Stashd for the first time should understand the comment without reading the protocol repository.
+
 Documentation quality is part of the SDK design, not just a CI checkbox.
 
 Generated PHPDoc MUST be written for a human reader and must explain the contract meaning of the declaration. Generic filler such as “Canonical id value”, “Gets the value”, “Immutable contract fact”, or “retained in contract order” is not sufficient by itself even if it satisfies the mechanical prose checker.
