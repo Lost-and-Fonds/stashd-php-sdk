@@ -8,6 +8,7 @@
     "stashd/plugin-api": "^0.2.2"
   },
   "require-dev": {
+    "nikic/php-parser": "^5.9",
     "pestphp/pest": "^4.0",
     "phpstan/phpstan": "^2.2",
     "friendsofphp/php-cs-fixer": "^3.95",
@@ -21,7 +22,8 @@
   "scripts": {
     "test": "vendor/bin/pest",
     "test:static": "vendor/bin/phpstan analyse",
-    "format": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php",
+    "check:docs": "php tools/check-docs.php",
+    "format": "vendor/bin/php-cs-fixer fix --allow-risky=yes --config=.php-cs-fixer.dist.php",
     "lint": [
       "composer dump-autoload --optimize --strict-psr --dry-run",
       "vendor/bin/php-cs-fixer check --allow-risky=yes --config=.php-cs-fixer.dist.php"

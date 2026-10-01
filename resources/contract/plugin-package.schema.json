@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "component": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "description": "Portable logical package path using `/` separators; see protocol/package-artifact.md for normalization, containment, and symlink rules.",
+          "minLength": 1,
+          "pattern": "^[^/\\\\:\\u0000-\\u001F\\u007F][^\\\\:\\u0000-\\u001F\\u007F]*$",
+          "type": "string"
+        },
+        "credential_slots": {
+          "additionalProperties": {
+            "$ref": "#/$defs/credential-slot"
+          },
+          "description": "Component-scoped credential requirements; each property name is a stable plugin-defined slot identity. Presentation fields do not participate in identity. See protocol/plugin-package.md for normative semantics.",
+          "propertyNames": {
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          },
+          "type": "object"
+        },
+        "world": {
+          "description": "Canonical WIT world implemented by this component; see protocol/plugin-package.md for the normative package and component metadata contract.",
+          "enum": [
+            "broadcast-world",
+            "collection-export-world",
+            "enrichment-world",
+            "input-world"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "world",
+        "artifact"
+      ],
+      "type": "object"
+    },
+    "credential-slot": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "Presentation metadata; does not participate in slot identity.",
+          "type": "string"
+        },
+        "label": {
+          "description": "Presentation metadata; does not participate in slot identity.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "required": {
+          "description": "Whether the component needs this binding for its normal configured function; does not grant access or guarantee availability.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "label",
+        "required"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://stashd.dev/schemas/plugin-package.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One deployable package identity may contain one or more identified components implementing canonical WIT worlds.",
+  "properties": {
+    "components": {
+      "additionalProperties": {
+        "$ref": "#/$defs/component"
+      },
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9._-]*$"
+      },
+      "type": "object"
+    },
+    "contract": {
+      "description": "Exact Stashd WIT package identity implemented by this package; hosts determine exact-identity support before lifecycle invocation.",
+      "pattern": "^stashd:plugin@[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "version": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "contract",
+    "components"
+  ],
+  "title": "Stashd Plugin Package Manifest",
+  "type": "object",
+  "x-stashd-contract-package": "stashd:plugin@0.17.0"
+}

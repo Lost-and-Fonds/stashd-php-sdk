@@ -2,20 +2,19 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  scaffold:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: xml
+          extensions: xml, iconv, mbstring
           coverage: none
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
-      - run: test -s AGENTS.md
-      - run: test -s README.md
-
-# The rewrite bootstrap must replace this temporary scaffold job with the full
-# lint, static-analysis, test, conformance, and PHPDoc-description gates before
-# implementation is considered complete.
+      - run: composer check:docs
+      - run: composer lint
+      - run: composer test:static
+      - run: composer test
+      - run: git diff --check

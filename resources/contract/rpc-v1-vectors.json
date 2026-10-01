@@ -1,0 +1,832 @@
+{
+  "package": "stashd:plugin@0.17.0",
+  "vectors": [
+    {
+      "name": "owned-byte-stream-handle",
+      "wit-type": "stashd:plugin/io-host.byte-stream",
+      "value": {
+        "$resource": {
+          "type": "stashd:plugin/io-host.byte-stream",
+          "id": "opaque-1"
+        }
+      },
+      "lifetime": "the receiving endpoint owns the handle until explicit drop or invocation cleanup"
+    },
+    {
+      "name": "broadcast-publish-collection-resource",
+      "lifecycle-method": "stashd:plugin/broadcast-plugin.publish",
+      "invocation": "inv-23",
+      "params": {
+        "request": {
+          "collection": {
+            "$resource": {
+              "type": "stashd:plugin/broadcast-host.item-collection",
+              "id": "opaque-collection"
+            }
+          },
+          "reporter": {
+            "$resource": {
+              "type": "stashd:plugin/broadcast-host.publication-reporter",
+              "id": "opaque-reporter"
+            }
+          },
+          "maximum-report-records-per-batch": 2
+        },
+        "configuration": {
+          "settings": []
+        },
+        "credentials": []
+      },
+      "ownership": "host-created collection and publication reporter handles transfer to the plugin and are valid only for inv-23"
+    },
+    {
+      "name": "broadcast-publication-report-files",
+      "method": "stashd:plugin/broadcast-host.publication-reporter.report-files",
+      "invocation": "inv-23",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/broadcast-host.publication-reporter",
+            "id": "opaque-reporter"
+          }
+        },
+        "files": [
+          {
+            "item-id": "item-1",
+            "asset-id": "asset-1",
+            "relative-path": "albums/one.jpg"
+          }
+        ]
+      },
+      "response-result": {
+        "ok": null
+      },
+      "batch": "non-empty and no larger than maximum-report-records-per-batch; entire batch accepted atomically"
+    },
+    {
+      "name": "broadcast-publication-report-metadata",
+      "method": "stashd:plugin/broadcast-host.publication-reporter.report-destination-metadata",
+      "invocation": "inv-23",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/broadcast-host.publication-reporter",
+            "id": "opaque-reporter"
+          }
+        },
+        "metadata": [
+          {
+            "schema": "example:receipt-v1",
+            "json": "{\"receipt\":\"opaque\"}"
+          }
+        ]
+      },
+      "response-result": {
+        "ok": null
+      },
+      "ordering": "successful call order, then record order within batch"
+    },
+    {
+      "name": "broadcast-publication-limit-exceeded",
+      "method": "stashd:plugin/broadcast-host.publication-reporter.report-files",
+      "invocation": "inv-23",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/broadcast-host.publication-reporter",
+            "id": "opaque-reporter"
+          }
+        },
+        "files": [
+          {
+            "item-id": null,
+            "asset-id": null,
+            "relative-path": "output/0.bin"
+          },
+          {
+            "item-id": null,
+            "asset-id": null,
+            "relative-path": "output/1.bin"
+          },
+          {
+            "item-id": null,
+            "asset-id": null,
+            "relative-path": "output/2.bin"
+          }
+        ]
+      },
+      "response-result": {
+        "error": "limit-exceeded"
+      },
+      "acceptance": "three records exceed the maximum of two; zero records from this batch accepted"
+    },
+    {
+      "name": "broadcast-publication-complete",
+      "lifecycle-method": "stashd:plugin/broadcast-plugin.publish",
+      "invocation": "inv-23",
+      "response-result": {
+        "ok": {
+          "artifact": null,
+          "files": "complete"
+        }
+      },
+      "meaning": "successful lifecycle result commits the complete accepted report sequences; no inline lists"
+    },
+    {
+      "name": "broadcast-publication-not-applicable",
+      "lifecycle-method": "stashd:plugin/broadcast-plugin.publish",
+      "invocation": "inv-remote",
+      "report-files-calls": 0,
+      "response-result": {
+        "ok": {
+          "artifact": null,
+          "files": "not-applicable"
+        }
+      },
+      "meaning": "no accepted file reports; remote metadata may be reported separately"
+    },
+    {
+      "name": "broadcast-collection-next-batch",
+      "method": "stashd:plugin/broadcast-host.item-collection.next",
+      "invocation": "inv-23",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/broadcast-host.item-collection",
+            "id": "opaque-collection"
+          }
+        },
+        "max-items": 500
+      },
+      "response-result": {
+        "ok": [
+          {
+            "id": "item-1",
+            "assets": [],
+            "metadata": []
+          }
+        ]
+      },
+      "batch": "non-empty and no larger than requested or host maximum"
+    },
+    {
+      "name": "broadcast-collection-eof",
+      "method": "stashd:plugin/broadcast-host.item-collection.next",
+      "invocation": "inv-23",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/broadcast-host.item-collection",
+            "id": "opaque-collection"
+          }
+        },
+        "max-items": 500
+      },
+      "response-result": {
+        "ok": null
+      },
+      "meaning": "EOF; only after this may publish return successful publication"
+    },
+    {
+      "name": "broadcast-collection-drop",
+      "method": "stashd:plugin/rpc.resource-drop",
+      "invocation": "inv-23",
+      "params": {
+        "resource": {
+          "$resource": {
+            "type": "stashd:plugin/broadcast-host.item-collection",
+            "id": "opaque-collection"
+          }
+        }
+      },
+      "response-result": null,
+      "lifetime": "drop releases the resource; invocation end invalidates any remaining collection handle"
+    },
+    {
+      "name": "nested-owned-http-request-body",
+      "method": "stashd:plugin/http-host.http-client.request",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/http-host.http-client",
+            "id": "opaque-client"
+          }
+        },
+        "request": {
+          "method": "post",
+          "url": "https://example.invalid/archive",
+          "credential": null,
+          "headers": [],
+          "body": {
+            "$resource": {
+              "type": "stashd:plugin/io-host.byte-stream",
+              "id": "opaque-stream"
+            }
+          }
+        }
+      },
+      "ownership": "request.body is owned option<byte-stream>; acceptance consumes opaque-stream",
+      "after-acceptance": "the host installs the stream in its active-resource table and the plugin rejects any reuse or drop"
+    },
+    {
+      "name": "generic-http-method-tokens",
+      "method": "stashd:plugin/http-host.http-client.request",
+      "methods": [
+        "HEAD",
+        "OPTIONS",
+        "PROPFIND",
+        "MKCOL",
+        "MOVE",
+        "COPY",
+        "X-STASHD-EXT"
+      ],
+      "validation": "each method is a non-empty ASCII tchar token; no closed method list applies; invalid syntax is rejected before dispatch"
+    },
+    {
+      "name": "conditional-range-authenticated-stream",
+      "method": "stashd:plugin/http-host.http-client.request",
+      "request": {
+        "method": "PROPFIND",
+        "url": "https://example.invalid/webdav/",
+        "credential": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.credential-reference",
+            "id": "credential-1"
+          }
+        },
+        "headers": [
+          {
+            "name": "If-None-Match",
+            "value": "\"etag-1\""
+          },
+          {
+            "name": "Range",
+            "value": "bytes=0-1023"
+          }
+        ],
+        "body": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.byte-stream",
+            "id": "opaque-stream"
+          }
+        }
+      },
+      "policy": "the host mediates the opaque credential and consumes the streamed body without requiring provider-specific fields"
+    },
+    {
+      "name": "redirect-under-host-policy",
+      "method": "stashd:plugin/http-host.http-client.request",
+      "policy": {
+        "redirects": "host-defined",
+        "recheck-url-policy": true,
+        "recheck-credential-grant": true,
+        "forward-credential-to-new-authority": "only-if-host-policy-allows",
+        "replay-streamed-body": "only-if-safely-replayable",
+        "preserve-method-and-headers": "unless-documented-status-policy-says-otherwise"
+      },
+      "failure": "otherwise return a typed HTTP error rather than inheriting an SDK client default"
+    },
+    {
+      "name": "staged-writer-finish-canonical-descriptor",
+      "method": "stashd:plugin/io-host.staged-writer.finish",
+      "invocation": "inv-stage-1",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.staged-writer",
+            "id": "writer-1"
+          }
+        }
+      },
+      "response-result": {
+        "ok": {
+          "reference": "opaque-stage-1",
+          "media-type": "application/octet-stream",
+          "size-bytes": "4",
+          "metadata": [
+            {
+              "schema": "example:v1",
+              "json": "{}"
+            }
+          ]
+        }
+      },
+      "authority": "the host observes four successfully written bytes, records create-time media type and metadata, issues the opaque reference, registers this canonical descriptor, and leaves the writer handle live in FINISHED state"
+    },
+    {
+      "name": "reopen-exact-canonical-staged-artifact",
+      "method": "stashd:plugin/io-host.open-staged-artifact",
+      "invocation": "inv-stage-1",
+      "params": {
+        "artifact": {
+          "reference": "opaque-stage-1",
+          "media-type": "application/octet-stream",
+          "size-bytes": "4",
+          "metadata": [
+            {
+              "schema": "example:v1",
+              "json": "{}"
+            }
+          ]
+        },
+        "offset": "0",
+        "length": null
+      },
+      "response-result": {
+        "ok": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.byte-stream",
+            "id": "stream-stage-1"
+          }
+        }
+      },
+      "lifetime": "exact canonical descriptors reopen as new streams only in the current invocation; unknown or stale references are missing and altered known descriptors are denied"
+    },
+    {
+      "name": "staged-writer-second-finish-failed",
+      "method": "stashd:plugin/io-host.staged-writer.finish",
+      "invocation": "inv-stage-1",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.staged-writer",
+            "id": "writer-1"
+          }
+        }
+      },
+      "response-result": {
+        "error": {
+          "tag": "failed",
+          "value": "writer already finished"
+        }
+      },
+      "state": "FINISHED is terminal; a second finish does not create another staged artifact"
+    },
+    {
+      "name": "borrowed-helper-output",
+      "method": "stashd:plugin/io-host.run-helper",
+      "params": {
+        "name": "formatter",
+        "args": [],
+        "input": null,
+        "output": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.staged-writer",
+            "id": "opaque-writer"
+          }
+        },
+        "credentials": []
+      },
+      "ownership": "output is option<borrow<staged-writer>>; call does not consume opaque-writer",
+      "after-response": "the borrow expires; the plugin retains the writer and the host cannot use or drop this handle"
+    },
+    {
+      "name": "stream-read-chunk",
+      "method": "stashd:plugin/io-host.byte-stream.read",
+      "params": {
+        "self": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.byte-stream",
+            "id": "opaque-1"
+          }
+        }
+      },
+      "response-result": {
+        "ok": [
+          0,
+          1,
+          127,
+          255
+        ]
+      }
+    },
+    {
+      "name": "stream-read-eof",
+      "response-result": {
+        "ok": null
+      },
+      "lifetime": "the byte-stream remains owned and readable after EOF until explicit drop or invocation cleanup"
+    },
+    {
+      "name": "explicit-resource-drop",
+      "method": "stashd:plugin/rpc.resource-drop",
+      "params": {
+        "resource": {
+          "$resource": {
+            "type": "stashd:plugin/io-host.byte-stream",
+            "id": "opaque-1"
+          }
+        }
+      },
+      "response-result": null,
+      "lifetime": "the owner invalidates the handle before cleanup; a second drop is a protocol failure"
+    },
+    {
+      "name": "u64-boundaries",
+      "wit-type": "u64",
+      "values": [
+        "0",
+        "9007199254740993",
+        "18446744073709551615"
+      ]
+    },
+    {
+      "name": "s64-boundaries",
+      "wit-type": "s64",
+      "values": [
+        "-9223372036854775808",
+        "9007199254740993",
+        "9223372036854775807"
+      ]
+    },
+    {
+      "name": "host-synthesized-collection-limit",
+      "lifecycle-response": {
+        "protocol": 1,
+        "id": "host-1",
+        "kind": "response",
+        "invocation": "inv-1",
+        "result": {
+          "error": {
+            "tag": "limit-exceeded",
+            "value": {
+              "message": "configured limit exceeded",
+              "retryable": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reentrant-correlation",
+      "frames-in-order": [
+        {
+          "protocol": 1,
+          "id": "host-1",
+          "kind": "request",
+          "invocation": "inv-1",
+          "method": "stashd:plugin/input-plugin.acquire",
+          "params": {}
+        },
+        {
+          "protocol": 1,
+          "id": "plugin-1",
+          "kind": "request",
+          "invocation": "inv-1",
+          "method": "stashd:plugin/io-host.open-staging-area",
+          "params": {}
+        },
+        {
+          "protocol": 1,
+          "id": "plugin-1",
+          "kind": "response",
+          "invocation": "inv-1",
+          "result": {
+            "$resource": {
+              "type": "stashd:plugin/io-host.staging-area",
+              "id": "opaque-area"
+            }
+          }
+        },
+        {
+          "protocol": 1,
+          "id": "host-1",
+          "kind": "response",
+          "invocation": "inv-1",
+          "result": {
+            "ok": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "hello-first",
+      "frames-in-order": [
+        {
+          "protocol": 1,
+          "id": "plugin-hello",
+          "kind": "request",
+          "method": "hello",
+          "params": {
+            "min": 1,
+            "max": 1,
+            "max-frame-bytes": 2097152
+          }
+        },
+        {
+          "protocol": 1,
+          "id": "plugin-hello",
+          "kind": "response",
+          "result": {
+            "protocol": 1,
+            "min": 1,
+            "max": 1,
+            "max-frame-bytes": 1048576
+          }
+        },
+        {
+          "protocol": 1,
+          "id": "host-1",
+          "kind": "request",
+          "invocation": "inv-1",
+          "method": "stashd:plugin/input-plugin.acquire",
+          "params": {
+            "item": {
+              "id": "item-1",
+              "reference": "source:item-1",
+              "delegation": null,
+              "size-bytes": null,
+              "size-estimated": false,
+              "metadata": []
+            },
+            "options": {
+              "options": [],
+              "credentials": []
+            }
+          }
+        }
+      ],
+      "startup-rule": "hello is first, invocation-free; plugin receive max is 2097152 bytes and host receive max is 1048576 bytes; lifecycle begins only after successful asymmetric negotiation"
+    },
+    {
+      "name": "enrichment-capabilities-local-discovery",
+      "lifecycle-method": "stashd:plugin/enrichment-plugin.capabilities",
+      "invocation": "inv-30",
+      "params": {
+        "context": {
+          "item-id": "item-opaque",
+          "assets": [],
+          "metadata": []
+        }
+      },
+      "response-result": [
+        {
+          "id": "example.fixed",
+          "revision": "r1",
+          "options": []
+        },
+        {
+          "id": "example.operation",
+          "revision": "r1",
+          "options": [
+            {
+              "key": "mode",
+              "label": "Mode",
+              "required": true,
+              "choices": [
+                {"value": "fast", "label": "Fast"},
+                {"value": "accurate", "label": "Accurate"}
+              ]
+            },
+            {
+              "key": "language",
+              "label": "Language",
+              "required": false,
+              "choices": [
+                {"value": "auto", "label": "Automatic"},
+                {"value": "en", "label": "English"}
+              ]
+            }
+          ]
+        }
+      ],
+      "discovery-boundary": {
+        "credentials": false,
+        "configuration": false,
+        "host-callbacks": false
+      },
+      "meaning": "capabilities has a direct list WIT return with no typed lifecycle error wrapper; the list comes from supplied context and local installed state and advertises an attemptable operation, not guaranteed execution success",
+      "uniqueness-vectors": {
+        "invalid-descriptors": [
+          {
+            "name": "duplicate-capability-id",
+            "discovery-result": [
+              {"id": "example.operation", "revision": "r1", "options": []},
+              {"id": "example.operation", "revision": "r2", "options": []}
+            ],
+            "expected": "contract/protocol violation"
+          },
+          {
+            "name": "duplicate-option-key",
+            "capability": {"id": "example.operation", "revision": "r1", "options": [
+              {"key": "mode", "label": "Mode", "required": true, "choices": [{"value": "fast", "label": "Fast"}]},
+              {"key": "mode", "label": "Alternative mode", "required": false, "choices": [{"value": "accurate", "label": "Accurate"}]}
+            ]},
+            "expected": "contract/protocol violation"
+          },
+          {
+            "name": "empty-option-choices",
+            "capability": {"id": "example.operation", "revision": "r1", "options": [
+              {"key": "mode", "label": "Mode", "required": false, "choices": []}
+            ]},
+            "expected": "contract/protocol violation"
+          },
+          {
+            "name": "duplicate-choice-value",
+            "capability": {"id": "example.operation", "revision": "r1", "options": [
+              {"key": "mode", "label": "Mode", "required": true, "choices": [
+                {"value": "fast", "label": "Fast"},
+                {"value": "fast", "label": "Very Fast"}
+              ]}
+            ]},
+            "expected": "contract/protocol violation"
+          }
+        ],
+        "valid-configurations": [
+          {"name": "required-mode-only-optional-language-omitted", "configuration": [{"key": "mode", "value": "fast"}], "expected": "valid"},
+          {"name": "required-and-optional-selected", "configuration": [{"key": "mode", "value": "accurate"}, {"key": "language", "value": "en"}], "expected": "valid"},
+          {"name": "optional-only-empty", "options": [{"key": "language", "required": false, "choices": [{"value": "en"}]}], "configuration": [], "expected": "valid"},
+          {"name": "fixed-capability-empty", "options": [], "configuration": [], "expected": "valid"}
+        ],
+        "invalid-configurations": [
+          {"name": "duplicate-identical", "configuration": [{"key": "mode", "value": "fast"}, {"key": "mode", "value": "fast"}], "expected": "invalid-configuration"},
+          {"name": "duplicate-different", "configuration": [{"key": "mode", "value": "fast"}, {"key": "mode", "value": "accurate"}], "expected": "invalid-configuration"},
+          {"name": "unknown-option", "configuration": [{"key": "unknown", "value": "x"}], "expected": "invalid-configuration"},
+          {"name": "missing-required", "configuration": [], "expected": "invalid-configuration"},
+          {"name": "unsupported-choice", "configuration": [{"key": "mode", "value": "turbo"}], "expected": "invalid-configuration"},
+          {"name": "extra-on-fixed-capability", "options": [], "configuration": [{"key": "extra", "value": "x"}], "expected": "invalid-configuration"}
+        ],
+        "failure-boundary": {"invalid-discovered-descriptor": "contract/protocol violation", "invalid-caller-selection": "plugin-error.invalid-configuration", "unknown-inapplicable-or-stale-identity": "plugin-error.unsupported"}
+      }
+    },
+    {
+      "name": "shared-value-semantics",
+      "plugin-metadata": {
+        "valid-schema-values": [
+          "example",
+          " ",
+          "example@1"
+        ],
+        "invalid-schema-values": [
+          ""
+        ],
+        "valid-json-example": {
+          "schema": "example",
+          "json": "{\"a\":1}"
+        },
+        "invalid-json-cases": [
+          "malformed-json",
+          "root-array",
+          "duplicate-member-at-any-depth"
+        ],
+        "receiver-validity-proves-producer-conformance": false,
+        "producer-conformance-inferable-from-schema": false,
+        "canonicalization-required": false,
+        "core-interprets-domain-fields": false
+      },
+      "byte-stream": {
+        "valid-data": {
+          "ok": [
+            0
+          ]
+        },
+        "eof": {
+          "ok": null
+        },
+        "invalid-empty-data": {
+          "ok": []
+        },
+        "eof-sticky": true
+      },
+      "progress": {
+        "valid": [
+          null,
+          0.0,
+          1.0
+        ],
+        "invalid": [
+          -0.1,
+          1.0001
+        ],
+        "monotonicity-required": false
+      },
+      "meaning": "compact semantic examples; invalid values are contract violations, not lifecycle results"
+    },
+    {
+      "name": "lifecycle-response-result",
+      "response": {
+        "protocol": 1,
+        "id": "host-1",
+        "kind": "response",
+        "invocation": "inv-1",
+        "result": {
+          "error": {
+            "tag": "failed",
+            "value": {
+              "message": "example failure",
+              "retryable": false
+            }
+          }
+        }
+      },
+      "meaning": "the WIT result error is nested inside required result; top-level error is forbidden"
+    },
+    {
+      "name": "input-size-estimate-states",
+      "valid": [
+        {
+          "size-bytes": null,
+          "size-estimated": false
+        },
+        {
+          "size-bytes": "0",
+          "size-estimated": false
+        },
+        {
+          "size-bytes": "0",
+          "size-estimated": true
+        }
+      ],
+      "invalid": [
+        {
+          "size-bytes": null,
+          "size-estimated": true
+        }
+      ],
+      "meaning": "zero is a valid u64 byte size; unknown, non-estimated, and estimated values are distinct"
+    },
+    {
+      "name": "rpc-frame-size-boundaries",
+      "bootstrap-bytes": 4096,
+      "advertisements": {
+        "plugin": 8192,
+        "host": 16384
+      },
+      "sender-rules": {
+        "plugin-to-host": "16384",
+        "host-to-plugin": "8192"
+      },
+      "acceptance": "payload exactly equal to peer maximum accepted; one byte over rejected before dispatch",
+      "utf8-example": {
+        "raw-json": "{\"x\":\"é\"}",
+        "encoded-utf8-bytes": 10,
+        "character-count": 9,
+        "meaning": "transport size is the encoded UTF-8 byte length of the complete JSON payload, not its character count"
+      }
+    },
+    {
+      "name": "rpc-frame-invalid-advertisements",
+      "cases": [
+        {
+          "value": null,
+          "valid": false
+        },
+        {
+          "value": 0,
+          "valid": false
+        },
+        {
+          "value": 4095,
+          "valid": false
+        },
+        {
+          "value": 4294967296,
+          "valid": false
+        },
+        {
+          "value": 4096.0,
+          "valid": false
+        },
+        {
+          "missing": true,
+          "valid": false
+        }
+      ],
+      "hello-payload-over-4096": "protocol failure"
+    },
+    {
+      "name": "rpc-batch-fits-frame",
+      "maximum-items-per-batch": 100,
+      "peer-frame-bytes": 1200,
+      "records-sent": 46,
+      "reason": "producer sends fewer than semantic count maximum when the next record would exceed encoded frame maximum"
+    },
+    {
+      "name": "staged-writer-frame-sizing",
+      "host-advertised-max-frame-bytes": 1048576,
+      "rule": "plugin encodes the complete write request and MUST keep payload within host advertisement; no private chunk ceiling or probe"
+    }
+  ],
+  "raw-duplicate-member-frames": [
+    {
+      "name": "duplicate top-level method",
+      "raw-frame": "{\"kind\":\"request\",\"id\":\"1\",\"method\":\"input.discover\",\"method\":\"broadcast.publish\"}"
+    },
+    {
+      "name": "duplicate top-level id",
+      "raw-frame": "{\"kind\":\"request\",\"id\":\"1\",\"id\":\"2\",\"method\":\"hello\",\"params\":{\"min\":1,\"max\":1}}"
+    },
+    {
+      "name": "duplicate hello params",
+      "raw-frame": "{\"kind\":\"request\",\"id\":\"1\",\"method\":\"hello\",\"params\":{\"min\":1,\"min\":1,\"max\":1}}"
+    },
+    {
+      "name": "duplicate resource handle member",
+      "raw-frame": "{\"kind\":\"request\",\"id\":\"1\",\"method\":\"x\",\"params\":{\"self\":{\"$resource\":{\"type\":\"x\",\"id\":\"a\",\"id\":\"b\"}}}}"
+    },
+    {
+      "name": "duplicate nested WIT member",
+      "raw-frame": "{\"kind\":\"request\",\"id\":\"1\",\"method\":\"x\",\"params\":{\"item\":{\"metadata\":{\"schema\":\"x\",\"schema\":\"y\"}}}}"
+    }
+  ]
+}
