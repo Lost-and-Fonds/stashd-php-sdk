@@ -124,6 +124,90 @@ Do not let `src/` become a flat junk drawer again. Only primary interaction poin
 - Do not preserve 0.3.x public API compatibility merely to reduce churn. 0.4.0
   is the deliberate breaking rewrite.
 
+## Plugin developer experience
+
+A third-party plugin MUST be practical to develop and test without installing or running Stashd Core.
+
+Core is the final end-to-end environment, not a prerequisite for normal plugin development.
+
+The intended development ladder is:
+
+1. edit plugin code;
+2. run normal PHP tests through SDK-provided in-process test harnesses;
+3. run a package/process check through an SDK-provided development host;
+4. use a full Stashd Core instance only for final end-to-end testing when needed.
+
+### In-process testing
+
+The SDK SHOULD provide simple public testing helpers under `Stashd\PluginSdk\Testing\...` for each plugin type.
+
+Expected primary helpers include:
+
+- `InputHarness`;
+- `BroadcastHarness`;
+- `EnrichmentHarness`;
+- `CollectionExportHarness`.
+
+These harnesses exist for ordinary plugin tests. They should call the same public author-facing interfaces plugin code implements and make it easy to supply fake HTTP responses, credential bindings, Assets, staging, helper results, and other host-provided data relevant to the lifecycle under test.
+
+A plugin author should not need to construct RPC frames, resource handles, generated `Contract\*` values, or Stashd Core objects to test plugin behavior.
+
+### Real package/process testing
+
+The SDK SHOULD also ship a small development host and CLI that can launch the real package artifact from `stashd-plugin.json` and speak the canonical Stashd plugin protocol to it.
+
+The preferred command is:
+
+`vendor/bin/stashd-plugin check`
+
+It should verify, at minimum:
+
+- `stashd-plugin.json` exists and is valid;
+- the declared contract identity is supported;
+- component worlds are valid;
+- declared artifacts exist and can be launched;
+- Composer/autoload startup succeeds;
+- the plugin process completes canonical RPC hello negotiation;
+- the process implements the declared world strongly enough to run basic lifecycle probes;
+- protocol/resource cleanup failures are reported clearly.
+
+This path MUST use the real subprocess boundary and the same canonical protocol/runtime rules exercised by SDK conformance tests. Do not create a second simplified wire interpretation only for developer tooling.
+
+A friendly interactive command such as:
+
+`vendor/bin/stashd-plugin try`
+
+is encouraged for manually exercising lifecycle calls without Core. It may prompt for simple inputs and display readable results. Repeatable fixture-driven execution is also encouraged.
+
+### Test doubles and host services
+
+Testing helpers may provide convenient fakes for:
+
+- HTTP responses;
+- credential bindings;
+- preserved Assets;
+- staging output;
+- helper execution;
+- progress/log capture;
+- bounded collections and streams.
+
+These fakes must preserve the important contract semantics they represent. Convenience must not teach plugin authors behavior that will fail against the real host.
+
+### Starter repositories as forcing fixtures
+
+The private starter repositories:
+
+- `Lost-and-Fonds/example-input-plugin`;
+- `Lost-and-Fonds/example-broadcast-plugin`;
+- `Lost-and-Fonds/example-enrichment-plugin`;
+- `Lost-and-Fonds/example-collection-export-plugin`;
+
+are design fixtures for the 0.4 author experience.
+
+The finished SDK should make their intended public API compile and their normal `composer test` workflow pass without importing `Contract`, `Runtime`, `Diagnostics`, or `Tooling`.
+
+If making the SDK conform to the frozen contract forces an example to change, keep the example simple. Do not expose storage-room internals merely to preserve a sketch.
+
 ## Documentation audience and generation rules
 
 Public author-facing documentation and example code MUST use simple, direct English suitable for a developer who has never used Stashd before and may speak English as a second language.
