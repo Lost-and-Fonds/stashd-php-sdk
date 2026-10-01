@@ -65,6 +65,49 @@ otherwise reinterpret IDs, references, schema identifiers, credential
 references, continuation values, or plugin-owned state unless plugin-api
 explicitly requires it.
 
+## Public API layout — root `src/` is the shopfront
+
+Treat the repository root `src/` namespace as the obvious starting point for a third-party plugin developer.
+
+The small set of primary developer-facing entry interfaces/classes SHOULD live directly under:
+
+`Stashd\\PluginSdk\\`
+
+Examples include:
+
+- `InputPlugin`;
+- `BroadcastPlugin`;
+- `EnrichmentPlugin`;
+- `CollectionExporter`;
+- a common bootstrap/entrypoint type if one is genuinely useful.
+
+A plugin author should be able to open `src/` and immediately see the handful of things they are expected to implement or invoke.
+
+Do **not** flatten every public value type into the root namespace. Supporting author-facing values should remain grouped by coherent domain, for example:
+
+- `Stashd\\PluginSdk\\Input\\...`;
+- `Stashd\\PluginSdk\\Broadcast\\...`;
+- `Stashd\\PluginSdk\\Enrichment\\...`;
+- `Stashd\\PluginSdk\\CollectionExport\\...`;
+- `Stashd\\PluginSdk\\Shared\\...`.
+
+Internal machinery belongs behind clearly internal-looking namespaces such as:
+
+- `Contract\\` for exact frozen WIT/contract representations;
+- `Runtime\\` for RPC/resource/process machinery;
+- `Diagnostics\\` for tracing internals;
+- `Tooling\\` for repository/build tooling.
+
+The generated exact `Contract\\*` layer is **not** the intended plugin-author API. It exists to keep the wire/runtime exact. Most third-party plugin code should never need to import it.
+
+Design for this mental model:
+
+- root `src/`: “start here”;
+- domain namespaces: “things you use while implementing it”;
+- `Contract/Runtime/Tooling`: “storage room; normally do not touch”.
+
+Do not let `src/` become a flat junk drawer again. Only primary interaction points belong at the root.
+
 ## Public API rules
 
 - Public authoring APIs must be typed. Do not expose associative-array wire
