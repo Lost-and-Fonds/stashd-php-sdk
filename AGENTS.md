@@ -208,6 +208,22 @@ The finished SDK should make their intended public API compile and their normal 
 
 If making the SDK conform to the frozen contract forces an example to change, keep the example simple. Do not expose storage-room internals merely to preserve a sketch.
 
+### Batching and liveness conventions
+
+Where an author-facing API exposes control over batched traversal or transfer, use the optional name `batchSize` consistently.
+
+`batchSize` is a preference, not a promise. The SDK supplies a sensible default, and a smaller host/protocol limit may cap it. Changing it must not change item meaning or ordering.
+
+The SDK may provide item-at-a-time ergonomics while batching internally. Explicit commit/flush operations remain appropriate when they represent a useful checkpoint.
+
+Developer tooling should model long-running work using progress-based liveness rather than one short wall-clock timeout. Meaningful host-observable work keeps an invocation alive automatically. Empty heartbeat spam must not make a dead job immortal.
+
+Use a separate, generous, host-configurable absolute lifetime as a final safety fuse. No invocation should be able to hang forever.
+
+Committed discovery work may become available to the host before discovery finishes. Host-controlled acquisition concurrency may therefore overlap with ongoing discovery.
+
+See `docs/job-execution.md`.
+
 ## Documentation audience and generation rules
 
 Public author-facing documentation and example code MUST use simple, direct English suitable for a developer who has never used Stashd before and may speak English as a second language.
