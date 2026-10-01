@@ -124,6 +124,42 @@ Do not let `src/` become a flat junk drawer again. Only primary interaction poin
 - Do not preserve 0.3.x public API compatibility merely to reduce churn. 0.4.0
   is the deliberate breaking rewrite.
 
+## Documentation audience and generation rules
+
+Documentation quality is part of the SDK design, not just a CI checkbox.
+
+Generated PHPDoc MUST be written for a human reader and must explain the contract meaning of the declaration. Generic filler such as “Canonical id value”, “Gets the value”, “Immutable contract fact”, or “retained in contract order” is not sufficient by itself even if it satisfies the mechanical prose checker.
+
+Use this priority order for generated contract documentation:
+
+1. **Normative WIT/protocol documentation first.**
+   - Preserve and adapt the frozen plugin-api comments that explain identity, opacity, ownership, lifetime, authority, batching, ordering, retryability, null meaning, invariants, or other semantics.
+   - Lightly adapt wording for a PHP reader where necessary, but do not weaken or invent semantics.
+   - When relevant semantics live in a normative protocol document rather than directly beside the WIT declaration, the generator or a small explicit documentation mapping MAY supply that text.
+
+2. **Audience-aware semantic fallback text second.**
+   - If the frozen contract supplies no useful prose, generate a description based on the declaration's role and type rather than its spelling alone.
+   - Opaque strings should say that they are opaque, who owns/interprets them, and that the SDK preserves them verbatim.
+   - Resources should explain invocation scope, ownership/borrowing, explicit release, and stale-handle behavior where relevant.
+   - Lists should explain ordering, duplicate significance, and ownership/interpretation where known.
+   - Optional values should explain what `null` means when the contract establishes that meaning.
+   - Enum/variant cases should explain their protocol identity or semantic branch where known.
+   - Quantities should state units and bounds where relevant.
+   - References must not be described as paths, URLs, bearer credentials, or other stronger concepts unless the contract says so.
+
+3. **Hand-written author-facing documentation for the shopfront API.**
+   - Primary root interfaces/classes and domain-facing author types MUST be deliberately documented for third-party PHP plugin developers.
+   - Do not generate vague contract-shaped prose for the main author experience merely because generation is convenient.
+   - Explain when plugin authors implement/call the API, what the host supplies, what the plugin owns, what may fail, what is opaque, what lifetime applies, and any ordering/retry/security implications.
+
+Generated `Contract\\*` types should make their audience explicit. Where useful, their type-level docs should say that they are internal exact representations used by runtime/codecs to preserve the frozen contract and that plugin authors normally use the corresponding author-facing SDK API instead.
+
+The generator is the source of truth for generated documentation. Do not hand-edit hundreds of generated PHPDoc blocks: improve `tools/generate-contract.py`, its input documentation data, or a small explicit semantic documentation map so regeneration remains deterministic.
+
+A small number of hand-maintained semantic overrides is acceptable for important concepts whose meaning cannot be recovered safely from the parsed WIT alone, for example preserved/staged Assets, discovery continuation/refresh state, lifecycle interfaces, and resource ownership types. Keep such overrides explicit, reviewable, and tied to the frozen contract rather than duplicating arbitrary prose across generated files.
+
+The mechanical documentation checker proves that description prose exists. Human review MUST additionally reject generated boilerplate that fails to explain useful semantics.
+
 ## Mandatory documentation — CI invariant
 
 EVERY PHP declaration must have PHPDoc with real description prose.
