@@ -3,7 +3,6 @@
   "description": "PHP 8.5 authoring SDK for the Stashd plugin contract",
   "type": "library",
   "license": "MIT",
-  "version": "0.4.0-dev",
   "require": {
     "php": "^8.5",
     "stashd/plugin-api": "^0.2.2"
