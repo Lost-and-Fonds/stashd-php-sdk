@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1016abdefe7331537d5b10557e19b284",
+    "content-hash": "07c59845b2ffd3808adef02bce37f04b",
     "packages": [
         {
             "name": "stashd/plugin-api",
@@ -809,6 +809,47 @@
                 }
             ],
             "time": "2026-09-22T09:54:55+00:00"
+        },
+        {
+            "name": "hipsterjazzbo/php-style",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hipsterjazzbo/php-style.git",
+                "reference": "4679b9cd4509fae079958f1cf7a229fbbaa77820"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hipsterjazzbo/php-style/zipball/4679b9cd4509fae079958f1cf7a229fbbaa77820",
+                "reference": "4679b9cd4509fae079958f1cf7a229fbbaa77820",
+                "shasum": ""
+            },
+            "require": {
+                "friendsofphp/php-cs-fixer": "^3.95",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "HipsterJazzbo\\PhpStyle\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Shared PHP-CS-Fixer configuration for HipsterJazzbo projects.",
+            "homepage": "https://github.com/hipsterjazzbo/php-style",
+            "keywords": [
+                "coding-style",
+                "php",
+                "php-cs-fixer"
+            ],
+            "support": {
+                "issues": "https://github.com/hipsterjazzbo/php-style/issues",
+                "source": "https://github.com/hipsterjazzbo/php-style"
+            },
+            "time": "2026-10-01T22:23:58+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",

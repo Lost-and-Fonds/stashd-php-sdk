@@ -1,6 +1,6 @@
 # First-party plugin forcing cases
 
-This note checks the intended behaviour of Stashd's current first-party plugins against the frozen `stashd:plugin@0.17.0` contract and the PHP SDK 0.4 authoring design.
+This note checks the intended behaviour of Stashd's current first-party plugins against the frozen `stashd:plugin@0.18.0` contract and the PHP SDK 0.4 authoring design.
 
 The goal is not to preserve old implementation patterns. The old plugins contain filesystem paths, giant context objects, preparation phases, provider-shaped DTOs, and other 0.3-era workarounds that must not become new SDK requirements.
 
@@ -33,18 +33,33 @@ Credential availability must be inspectable without magic options such as the ol
 The helper API must make the canonical stream model pleasant:
 
 - Asset/staged streams should feel like ordinary readable PHP byte streams or iterables;
-- a staged writer should be easy to pass as helper stdout;
+- a staged writer should be easy to transfer as owned helper stdout, then finish
+  and reopen when a normal exit returns it;
 - a helper result written to temporary invocation staging should be easy to finish, reopen, and parse;
 - helpers that produce several durable outputs may be invoked once per output without exposing a host filesystem path;
-- selected credential bindings should be easy to pass by slot name.
+- selected credential bindings should be easy to pass by slot name;
+- live process events should be directly iterable without importing `Contract`
+  or handling RPC resources; cancellation and a terminal result should be clear;
+- stdout/stderr bytes must stay distinct, including arbitrary bytes and
+  carriage-return progress; staging stdout yields cumulative activity instead
+  of duplicate stdout byte events, while stderr remains live;
+- high-volume output should not require buffering it all in PHP memory.
+
+For example, authors should be able to start a process, iterate live events,
+translate real yt-dlp/ffmpeg output into progress, and inspect its result.
+A synchronous convenience call, if provided, must use that same live process.
+Exact percentages require real provider evidence; activity alone is
+indeterminate. The host must retain accepted output despite slow event reads,
+deliver it before one terminal outcome, then return EOF. Cancellation, timeout,
+normal exit (including non-zero), and runtime failure stay distinct.
 
 The SDK must not recreate `/staging`, `stagingPath`, helper executable paths, or other fake filesystem capabilities.
 
 ### Deliberate redesigns
 
-The existing SQLite size estimator uses a persistent plugin-data path that 0.17 does not grant. It is an optimisation, not correctness state. The migrated plugin should use deterministic estimates or another explicitly supported durable mechanism rather than forcing a PHP-only persistent directory into the SDK.
+The existing SQLite size estimator uses a persistent plugin-data path that 0.18 does not grant. It is an optimisation, not correctness state. The migrated plugin should use deterministic estimates or another explicitly supported durable mechanism rather than forcing a PHP-only persistent directory into the SDK.
 
-The current yt-dlp helper emits live progress text while downloading. Canonical `run-helper` does not stream helper diagnostic stdout/stderr back to plugin code while the helper runs. Long helper work can still remain alive through host-observable activity and the plugin can report an indeterminate “Downloading” stage before starting it, but exact live yt-dlp percentages are not something the SDK should fake.
+The old 0.17 `run-helper` buffered diagnostic output and blocked real-time progress. Canonical 0.18 `start-helper` now returns a live `helper-process`. The SDK must let YouTube parse yt-dlp/ffmpeg progress during execution and report exact percentages only when provider bytes support them. With staged stdout, inspect stderr and cumulative stdout activity; do not duplicate staged stdout as diagnostic events. The process owns the writer until normal exit transfers it back; all other terminal outcomes and cleanup discard it.
 
 ## Podcast package
 
@@ -113,7 +128,7 @@ The same SDK requirements apply. Asset role/language/title/date/source grouping 
 
 ## Cross-plugin metadata
 
-The 0.17 Broadcast Item is intentionally generic. It does not contain universal title, description, date, duration, media role, language, source reference, public URL, or audiovisual kind fields.
+The 0.18 Broadcast Item is intentionally generic. It does not contain universal title, description, date, duration, media role, language, source reference, public URL, or audiovisual kind fields.
 
 First-party plugins still need those facts.
 
@@ -123,7 +138,7 @@ Source-specific destination information such as “this selected source is seaso
 
 ## Application integration outside the PHP SDK
 
-The frozen 0.17 package manifest intentionally owns only package/component identity, artifact/world selection, exact contract identity, and component credential slots. It does not declare the old Stashd-specific UI fields, helper policy, HTTP grants, source forms, Broadcast forms, actions, or jobs.
+The frozen 0.18 package manifest intentionally owns only package/component identity, artifact/world selection, exact contract identity, and component credential slots. It does not declare the old Stashd-specific UI fields, helper policy, HTTP grants, source forms, Broadcast forms, actions, or jobs.
 
 The frozen contract also leaves URL authorization, helper approval, timeout policy, destination persistence, and application orchestration to the host/runtime.
 
@@ -137,11 +152,11 @@ Therefore the Stashd Core migration still needs a separate application-integrati
 - orchestration of required Enrichment before Broadcast;
 - the sequencing of filesystem materialisation and Jellyfin/Plex refresh.
 
-These are not reasons to contaminate `stashd:plugin@0.17.0` or the PHP SDK with old manifest fields.
+These are not reasons to contaminate `stashd:plugin@0.18.0` or the PHP SDK with old manifest fields.
 
 ## Refresh sequencing warning
 
-The old Jellyfin/Plex plugins used a `finalize()` phase after publication to refresh the remote library. 0.17 deliberately has no finalize phase and says required destination work occurs inside `publish()`.
+The old Jellyfin/Plex plugins used a `finalize()` phase after publication to refresh the remote library. 0.18 deliberately has no finalize phase and says required destination work occurs inside `publish()`.
 
 Core must therefore ensure its filesystem publication semantics make this valid. If reported filesystem mappings are not materialised until after `publish()` returns, a refresh performed inside `publish()` would happen too early.
 
@@ -154,7 +169,8 @@ The 0.4 author API is not considered pleasant merely because the exact Contract 
 Before 0.4.0, representative tests/examples must demonstrate the intended first-party flows using only public author APIs:
 
 - large, batched Input discovery and helper-backed acquisition;
-- stream-based helper input/output with credentials and temporary staging;
+- live stream-based helper events, cancellation, real progress parsing,
+  credentials and temporary staged stdout with writer return/cleanup;
 - metadata facet reading/writing;
 - Enrichment-derived Assets;
 - multi-component package bootstrap;

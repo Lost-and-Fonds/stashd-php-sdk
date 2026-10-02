@@ -9,6 +9,12 @@ namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
  */
 enum FileReportStatus: string
 {
+    /**
+     * The publication reports no filesystem-relative paths.
+     */
     case NotApplicable = 'not-applicable';
+    /**
+     * Accepted file reports exhaust the publication filesystem result.
+     */
     case Complete = 'complete';
 }

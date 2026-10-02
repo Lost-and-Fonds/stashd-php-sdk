@@ -12,7 +12,8 @@
     "pestphp/pest": "^4.0",
     "phpstan/phpstan": "^2.2",
     "friendsofphp/php-cs-fixer": "^3.95",
-    "squizlabs/php_codesniffer": "^4.0"
+    "squizlabs/php_codesniffer": "^4.0",
+    "hipsterjazzbo/php-style": "^0.1"
   },
   "autoload": {
     "psr-4": {

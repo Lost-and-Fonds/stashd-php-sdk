@@ -26,6 +26,8 @@ final class DocumentationChecker
             || $node instanceof Node\Stmt\Function_
             || $node instanceof Node\Stmt\ClassMethod
             || $node instanceof Node\Stmt\Property
+            || $node instanceof Node\Stmt\ClassConst
+            || $node instanceof Node\Stmt\EnumCase
             || ($node instanceof Node\Param && $node->flags !== 0));
         $failures = [];
 

@@ -1,7 +1,7 @@
 # Stashd PHP SDK 0.4.x — repository instructions
 
 This branch is a clean rewrite of the PHP SDK for the frozen language-neutral
-contract `stashd:plugin@0.17.0`.
+contract `stashd:plugin@0.18.0`.
 
 The 0.3.x implementation is history, not an architecture template. Git preserves
 it. Do not restore old classes, wire aliases, lifecycle phases, or compatibility
@@ -10,10 +10,13 @@ shims unless the frozen plugin-api contract independently requires them.
 ## Source of truth
 
 The canonical contract is the `Lost-and-Fonds/plugin-api` repository at
-`stashd:plugin@0.17.0`.
+`stashd:plugin@0.18.0` (plugin-api main, merge `9bc3ef0e0f915fec296796bbbb56a6c35d674326`).
+
+The rewrite first targeted 0.17. The live helper-output blocker required the
+frozen 0.18 contract; do not implement 0.17 helper behavior as a fallback.
 
 When SDK design, existing PHP code, examples, comments, tests, or intuition
-disagree with plugin-api 0.17, plugin-api wins.
+disagree with plugin-api 0.18, plugin-api wins.
 
 Do not modify plugin-api from this repository. Do not redesign the contract
 while implementing the SDK.
@@ -21,7 +24,7 @@ while implementing the SDK.
 ## Product target
 
 - SDK line: `stashd/php-sdk 0.4.x`
-- Contract identity: `stashd:plugin@0.17.0`
+- Contract identity: `stashd:plugin@0.18.0`
 - Language target: PHP 8.5+
 - This is a from-scratch authoring SDK, not an in-place migration of 0.3.x.
 
@@ -50,11 +53,14 @@ Keep these responsibilities separated.
 
 ## PHP 8.5
 
-Use PHP 8.5 idiomatically and deliberately.
+Use PHP 8.5 idiomatically and deliberately. Use the shared
+`hipsterjazzbo/php-style` PHP-CS-Fixer configuration for common formatting
+rules; keep SDK-specific semantic documentation checks here. Import `NoDiscard`
+before using `#[NoDiscard]`, rather than using `#[\NoDiscard]`.
 
 Prefer modern features when they make the API clearer, safer, smaller, or more
 immutable. Examples include readonly/final value objects, constructor promotion,
-enums, clone-with, first-class callables, and `#[\NoDiscard]` where silently
+enums, clone-with, first-class callables, and imported `#[NoDiscard]` where silently
 ignoring a returned value is dangerous.
 
 Do not preserve older-PHP patterns for compatibility. Do not use new syntax only
@@ -287,7 +293,8 @@ This includes every:
 - trait;
 - named function;
 - method, including constructors and private methods;
-- property, including protected/private and promoted properties.
+- property, including protected/private and promoted properties;
+- constant and enum case.
 
 Each required docblock MUST contain at least one non-empty human-readable
 description line. Tags do not count as description text.
@@ -310,8 +317,9 @@ as purpose, lifecycle, ownership, scope, units, opacity, invariants, valid and
 invalid states, side effects, ordering, retry semantics, failure modes,
 security/credential sensitivity, and the corresponding plugin-api concept.
 
-The mechanical checker proves that description prose exists. Review is
-responsible for rejecting useless prose such as "The ID" or "Gets the value."
+The mandatory checker uses AST/parser inspection (`nikic/php-parser`), never
+regex. It proves that description prose exists. Review is responsible for
+rejecting useless prose such as "The ID" or "Gets the value."
 
 New or modified PHP code is not complete until this rule passes.
 
@@ -341,8 +349,10 @@ useful, but `ludicrous` means "give me essentially everything useful."
 When tracing is enabled, make runtime behavior reconstructable: hello
 negotiation, invocation boundaries, frame direction/size/IDs, dispatch,
 re-entrant calls, resource create/borrow/transfer/drop, stream activity, staging
-state, validation decisions, typed failures, protocol failures, elapsed timing,
-and invocation cleanup.
+state, helper start/process identity/event kind and stdout/stderr byte counts,
+cumulative staged stdout activity, cancellation, terminal outcome, returned or
+discarded writer ownership, validation decisions, typed failures, protocol
+failures, elapsed timing, and invocation/process cleanup.
 
 Tracing may be expensive. That is acceptable. Disabled tracing should have
 minimal overhead.
@@ -360,12 +370,22 @@ concern.
 
 ## Wire/runtime invariants
 
-Implement plugin-api 0.17 exactly, including its framing, hello negotiation,
+Implement plugin-api 0.18 exactly, including its framing, hello negotiation,
 directional frame maxima, exact JSON value mapping, duplicate-object-member
 rejection, invocation IDs, response envelopes, resource ownership/borrowing,
 re-entrant host capability calls, cleanup, byte-stream behavior, byte ranges,
 metadata validation, staging, credentials, Input, Broadcast, Enrichment, and
-Collection Export semantics.
+Collection Export semantics. `io-host.start-helper` returns a live
+`helper-process`; its optional staged output writer transfers ownership, not a
+borrow. Stdout is streamed as byte events unless staged, in which case live
+cumulative `stdout-activity` replaces stdout byte events. Stderr remains live.
+Accepted events precede one terminal outcome and EOF. Normal exit returns a
+valid writer for finishing; abnormal termination or cleanup discards it.
+Cancellation follows first-terminal-condition-wins; dropping a running process
+must terminate and reap it. Drain pipes independently of event consumption,
+preserve accepted bytes without unbounded PHP memory, and fit each event within
+the negotiated plugin receive-frame maximum. See plugin-api
+`protocol/helper-process.md` and `protocol/helper-process-vectors.json`.
 
 Do not create a PHP-specific RPC dialect.
 
@@ -390,7 +410,8 @@ The finished rewrite must have strong CI covering at least:
 - static analysis at the strongest practical level;
 - unit/feature/conformance tests;
 - mandatory PHPDoc-with-description enforcement;
-- plugin-api 0.17 language-neutral vectors/invariants where applicable;
+- plugin-api 0.18 language-neutral vectors/invariants, including live helper
+  events, ownership, cancellation, and frame-sized output;
 - explicit rejection of important 0.3.x wire conventions.
 
 Tests should exercise hostile malformed input as well as happy paths.

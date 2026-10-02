@@ -2,7 +2,7 @@
 
 This note records the execution model expected by the PHP SDK developer tools and by Stashd Core.
 
-It does not change the frozen `stashd:plugin@0.17.0` wire contract. Where the contract is more specific, the contract wins.
+It does not change the frozen `stashd:plugin@0.18.0` wire contract. Where the contract is more specific, the contract wins.
 
 ## One invocation is one bounded piece of work
 
@@ -80,13 +80,14 @@ Meaningful progress includes work the host can observe, such as:
 - bytes moving through host-managed streams;
 - staging writes;
 - HTTP activity;
-- helper-process activity;
+- helper stdout and stderr byte events when stdout is not staged, or cumulative
+  staged stdout activity and live stderr bytes when it is;
 - normal capability calls;
 - real progress reports tied to work.
 
 Long-running host-owned operations must keep the invocation alive automatically. Plugin authors should not need to emit fake heartbeat messages while a download or helper process is genuinely working.
 
-A plugin must not be able to keep a stuck invocation alive forever by sending empty or meaningless “still alive” messages.
+A silent process is not activity merely because it still exists. A plugin must not be able to keep a stuck invocation alive forever by sending empty or meaningless “still alive” messages. When only activity is known, report an indeterminate stage, not a made-up percentage.
 
 If no meaningful progress occurs for the configured idle period, the host may fail and terminate the invocation.
 
@@ -117,15 +118,39 @@ If one video stalls:
 
 If the host restarts, previously committed discovery and completed acquisition work should not need to be repeated when the relevant continuation/checkpoint data allows resumption.
 
+## Live helper processes
+
+The author-facing helper API should expose process events as they arrive. A
+plugin can read stdout and stderr bytes (including carriage-return progress)
+while the child runs, parse real provider evidence, and cancel the process.
+A synchronous convenience method may collect a result only by consuming the
+same events. High-volume output must be consumed or staged incrementally,
+not accumulated in PHP memory.
+
+When stdout is directed to an owned staged writer, the process writes bytes
+straight to staging. It emits cumulative stdout-activity counts instead of
+stdout diagnostic bytes; stderr still arrives live. On normal exit, the valid
+writer returns to the plugin to finish and optionally reopen. Cancellation,
+timeout, host failure, drop, and invocation cleanup discard that writer. The
+host drains both pipes independently of plugin reads, retains all accepted
+output, splits events to fit the plugin receive-frame maximum, delivers
+accepted output before exactly one terminal outcome, then returns EOF. A
+cancel request cannot change an already determined terminal outcome. Dropping
+a running process must terminate and reap it.
+
 ## Developer tooling
 
-The SDK test harnesses and subprocess development host should make these behaviors testable.
+The SDK test harnesses and subprocess development host should make these behaviors testable using the same 0.18 process and resource rules.
 
 Useful failure tests include:
 
 - discovery that stops making progress;
 - download/stream activity that remains alive for a long time;
-- helper work that remains active without plugin-side heartbeat spam;
+- live stdout/stderr chunks, staged stdout activity, and a silent running child
+  that does not count as activity by itself;
+- normal and non-zero exit, cancellation, timeout, and runtime failure;
+- large output with slow event consumption and no lost accepted bytes;
+- returned staged writer on normal exit and cleanup on abnormal termination;
 - plugin process crash;
 - plugin process exit during an invocation;
 - malformed protocol output;

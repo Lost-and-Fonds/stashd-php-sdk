@@ -9,10 +9,25 @@ namespace Stashd\PluginSdk\Diagnostics;
  */
 enum TraceLevel: int
 {
+    /**
+     * Disable SDK diagnostic output.
+     */
     case Off = 0;
+    /**
+     * Record major invocation and failure events.
+     */
     case Basic = 1;
+    /**
+     * Include additional resource and execution detail.
+     */
     case Verbose = 2;
+    /**
+     * Include safe RPC frame metadata without secrets.
+     */
     case Wire = 3;
+    /**
+     * Record all available safe runtime detail.
+     */
     case Ludicrous = 4;
 
     /**

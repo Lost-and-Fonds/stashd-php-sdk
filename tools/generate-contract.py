@@ -8,6 +8,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / 'resources/contract/wit-schema.json'
 PREFIX = 'Stashd\\PluginSdk\\Contract'
+ENUM_CASE_DOCS = {
+    ('input-host', 'deficiency-disposition', 'retryable'): 'The known gap may be filled by later preservation work.',
+    ('input-host', 'deficiency-disposition', 'terminal'): 'The known gap cannot be filled by retrying the same work.',
+    ('input-host', 'deficiency-disposition', 'unknown'): 'The producer cannot establish whether the gap can be filled.',
+    ('input-plugin', 'discovery-intent', 'refresh'): 'Discover changes using an optional completed refresh baseline.',
+    ('input-plugin', 'discovery-intent', 'complete'): 'Enumerate the logical Input without requiring a refresh baseline.',
+    ('broadcast-plugin', 'file-report-status', 'not-applicable'): 'The publication reports no filesystem-relative paths.',
+    ('broadcast-plugin', 'file-report-status', 'complete'): 'Accepted file reports exhaust the publication filesystem result.',
+}
 
 
 def pascal(name):
@@ -91,7 +100,8 @@ def main():
                      '/**', ' * Closed canonical cases for ' + interface + '.' + name + '; spelling is protocol identity.', ' */',
                      'enum ' + pascal(name) + ': string', '{']
             for value in enum['values']:
-                lines.append('    case ' + pascal(value) + " = '" + value + "';")
+                description = ENUM_CASE_DOCS[(interface, name, value)] if (interface, name, value) in ENUM_CASE_DOCS else 'Canonical ' + value + ' case of ' + name + '.'
+                lines.extend(['    /**', '     * ' + description, '     */', '    case ' + pascal(value) + " = '" + value + "';"])
             lines.extend(['}', ''])
             outputs[ROOT / 'src/Contract' / pascal(interface) / (pascal(name) + '.php')] = '\n'.join(lines)
         for name, variant in definition['variants'].items():
