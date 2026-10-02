@@ -9,7 +9,7 @@ use Stashd\PluginSdk\Contract\InputHost\DiscoveryRefreshState;
 
 /**
  * Immutable input-plugin.discovery-request contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class DiscoveryRequest
 {
@@ -35,13 +35,13 @@ final readonly class DiscoveryRequest
      * Canonical continuation value; retained in contract order without normalization.
      * @var DiscoveryContinuation|null
      */
-    public ?\Stashd\PluginSdk\Contract\InputHost\DiscoveryContinuation $continuation;
+    public ?DiscoveryContinuation $continuation;
 
     /**
      * Canonical refresh-state value; retained in contract order without normalization.
      * @var DiscoveryRefreshState|null
      */
-    public ?\Stashd\PluginSdk\Contract\InputHost\DiscoveryRefreshState $refreshState;
+    public ?DiscoveryRefreshState $refreshState;
 
     /**
      * Canonical maximum-items-per-batch value; retained in contract order without normalization.

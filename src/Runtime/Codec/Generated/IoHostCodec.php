@@ -13,7 +13,8 @@ use Stashd\PluginSdk\Contract\IoHost\HelperErrorDenied;
 use Stashd\PluginSdk\Contract\IoHost\HelperErrorFailed;
 use Stashd\PluginSdk\Contract\IoHost\HelperErrorInputFailed;
 use Stashd\PluginSdk\Contract\IoHost\HelperErrorUnavailable;
-use Stashd\PluginSdk\Contract\IoHost\HelperResult;
+use Stashd\PluginSdk\Contract\IoHost\HelperOutput;
+use Stashd\PluginSdk\Contract\IoHost\HelperOutputStream;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 use Stashd\PluginSdk\Contract\IoHost\PreservedAsset;
 use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
@@ -82,26 +83,24 @@ final class IoHostCodec
     /**
      * Decode all and only the declared fields before constructing an immutable value.
      */
-    public static function decodeHelperResult(mixed $value): HelperResult
+    public static function decodeHelperOutput(mixed $value): HelperOutput
     {
-        $record = Values::record($value, ['exit-code', 'stdout', 'stderr']);
+        $record = Values::record($value, ['channel', 'bytes']);
 
-        return new HelperResult(
-            Values::integer('s32', $record->{'exit-code'}),
-            Values::text($record->{'stdout'}),
-            Values::text($record->{'stderr'}),
+        return new HelperOutput(
+            IoHostCodec::decodeHelperOutputStream($record->{'channel'}),
+            array_map(static fn(mixed $element) => Values::integer('u8', $element), Values::list($record->{'bytes'})),
         );
     }
 
     /**
      * Encode canonical field spellings without leaking PHP names into the wire.
      */
-    public static function encodeHelperResult(HelperResult $value): stdClass
+    public static function encodeHelperOutput(HelperOutput $value): stdClass
     {
         return (object) [
-            'exit-code' => $value->exitCode,
-            'stdout' => $value->stdout,
-            'stderr' => $value->stderr,
+            'channel' => IoHostCodec::encodeHelperOutputStream($value->channel),
+            'bytes' => array_map(static fn(int $element) => $element, $value->bytes),
         ];
     }
 
@@ -185,6 +184,22 @@ final class IoHostCodec
             'size-bytes' => $value->sizeBytes->decimal,
             'metadata' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->metadata),
         ];
+    }
+
+    /**
+     * Decode only a declared canonical enum spelling.
+     */
+    public static function decodeHelperOutputStream(mixed $value): HelperOutputStream
+    {
+        return HelperOutputStream::tryFrom(Values::text($value)) ?? throw new ProtocolViolation('Unknown enum case');
+    }
+
+    /**
+     * Encode the exact protocol identity of this enum case.
+     */
+    public static function encodeHelperOutputStream(HelperOutputStream $value): string
+    {
+        return $value->value;
     }
 
     /**

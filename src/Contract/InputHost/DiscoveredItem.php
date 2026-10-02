@@ -9,7 +9,7 @@ use Stashd\PluginSdk\Shared\Unsigned64;
 
 /**
  * Immutable input-host.discovered-item contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class DiscoveredItem
 {
@@ -29,13 +29,13 @@ final readonly class DiscoveredItem
      * Canonical delegation value; retained in contract order without normalization.
      * @var InputDelegation|null
      */
-    public ?\Stashd\PluginSdk\Contract\InputHost\InputDelegation $delegation;
+    public ?InputDelegation $delegation;
 
     /**
      * Canonical size-bytes value; retained in contract order without normalization.
      * @var Unsigned64|null
      */
-    public ?\Stashd\PluginSdk\Shared\Unsigned64 $sizeBytes;
+    public ?Unsigned64 $sizeBytes;
 
     /**
      * Canonical size-estimated value; retained in contract order without normalization.

@@ -50,6 +50,28 @@ final class ResourceTable
     }
 
     /**
+     * Check that a transferred handle can be returned without changing ownership yet.
+     */
+    public function requireTransferred(string $invocation, string $id, string $type): void
+    {
+        $this->scope($invocation);
+        $entry = $this->entries[$id] ?? null;
+
+        if ($entry === null || $entry['type'] !== $type || $entry['state'] !== 'transferred') {
+            throw new ProtocolViolation('Returned resource was not transferred to the host');
+        }
+    }
+
+    /**
+     * Restore an owned resource returned by the host after this invocation transferred it.
+     */
+    public function returnTransferred(string $invocation, string $id, string $type): void
+    {
+        $this->requireTransferred($invocation, $id, $type);
+        $this->entries[$id]['state'] = 'owned';
+    }
+
+    /**
      * Validate type, invocation and ownership before permitting any resource operation.
      */
     public function requireOwned(string $invocation, string $id, string $type): void
@@ -90,6 +112,25 @@ final class ResourceTable
     {
         foreach ($this->entries as &$entry) {
             unset($entry['borrows'][$call]);
+        }
+    }
+
+    /**
+     * Validate all outgoing owned handles before accepting a frame, including duplicate occurrences.
+     * @param list<array{string, string}> $transfers
+     */
+    public function validateTransfers(string $invocation, array $transfers): void
+    {
+        $seen = [];
+
+        foreach ($transfers as [$id, $type]) {
+            $this->requireOwned($invocation, $id, $type);
+
+            if (isset($seen[$id]) || $this->entries[$id]['borrows'] !== []) {
+                throw new ProtocolViolation('Cannot transfer a borrowed or duplicated resource');
+            }
+
+            $seen[$id] = true;
         }
     }
 

@@ -8,7 +8,7 @@ use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 
 /**
  * Immutable broadcast-plugin.publication contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class Publication
 {
@@ -16,7 +16,7 @@ final readonly class Publication
      * Canonical artifact value; retained in contract order without normalization.
      * @var StagedArtifact|null
      */
-    public ?\Stashd\PluginSdk\Contract\IoHost\StagedArtifact $artifact;
+    public ?StagedArtifact $artifact;
 
     /**
      * Canonical files value; retained in contract order without normalization.

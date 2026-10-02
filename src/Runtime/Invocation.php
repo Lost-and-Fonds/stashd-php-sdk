@@ -8,6 +8,7 @@ use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\Runtime\Codec\Envelope;
 use Stashd\PluginSdk\Runtime\Codec\FrameChannel;
+use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
 use Stashd\PluginSdk\Runtime\Resource\ResourceTable;
 use stdClass;
 use Throwable;
@@ -76,8 +77,9 @@ final class Invocation
     /**
      * Issue one canonical imported call and require its exact response before allowing another call.
      * Payload validation and resource transfer are performed by the focused capability codec.
+     * @param list<array{string, string}> $transfers
      */
-    public function call(string $method, stdClass $params): mixed
+    public function call(string $method, stdClass $params, array $transfers = []): mixed
     {
         if (!$this->active) {
             throw new ProtocolViolation('Capability call outside active invocation');
@@ -94,11 +96,19 @@ final class Invocation
                 $correlation = 'plugin-' . ++$this->sequence;
             } while (isset($this->used[$correlation]));
 
+            $this->resources->validateTransfers($this->id, $transfers);
             $this->used[$correlation] = true;
             $context = ['invocation' => $this->id, 'id' => $correlation, 'method' => $method];
             $this->trace->emit(TraceLevel::Verbose, 'capability.start', $context);
             $this->channel->write((object) ['protocol' => 1, 'kind' => 'request', 'id' => $correlation,
                 'invocation' => $this->id, 'method' => $method, 'params' => $params]);
+
+            foreach ($transfers as [$id, $type]) {
+                $this->resources->transfer($this->id, $id, $type);
+                $this->trace->emit(TraceLevel::Ludicrous, 'resource.transfer', ['invocation' => $this->id,
+                    'resource-id' => $id, 'resource-type' => $type]);
+            }
+
             $response = $this->channel->read() ?? throw new ProtocolViolation('Host closed during capability call');
             Envelope::response($response, $correlation, $this->id);
             $this->resources->endCall($correlation);
@@ -113,6 +123,59 @@ final class Invocation
 
             throw $error;
         }
+    }
+
+    /**
+     * Send a WIT call with nested owned resources, committing transfers only after a complete request frame.
+     * @param array<string, array<string, mixed>> $arguments
+     * @param array<string, mixed> $resultType
+     * @param array<string, mixed> $values
+     */
+    public function typedCall(string $method, array $values, array $arguments, array $resultType, string $interface, ?string $writerId = null): mixed
+    {
+        $transfers = [];
+        $params = new stdClass();
+
+        foreach ($arguments as $name => $schema) {
+            if (!array_key_exists($name, $values)) {
+                $this->violate('Missing WIT argument');
+            }
+
+            $params->{$name} = ResourceValueCodec::encode($values[$name], $schema, $interface, $this, $transfers);
+        }
+
+        foreach ($values as $name => $_) {
+            if (!isset($arguments[$name])) {
+                $this->violate('Unexpected WIT argument');
+            }
+        }
+
+        return $this->callWithTransfer($method, $params, $transfers, $resultType, $interface, $writerId);
+    }
+
+    /**
+     * Validate the encoded frame before consumption and decode the correlated typed result.
+     * @param list<array{string, string}> $transfers
+     * @param array<string, mixed> $resultType
+     */
+    private function callWithTransfer(string $method, stdClass $params, array $transfers, array $resultType, string $interface, ?string $writerId): mixed
+    {
+        $result = $this->call($method, $params, $transfers);
+
+        try {
+            return ResourceValueCodec::decode($result, $resultType, $interface, $this, $writerId);
+        } catch (ProtocolViolation $error) {
+            $this->violate($error->getMessage());
+        }
+    }
+
+    /**
+     * Expose safe metadata about process events without serializing helper output or credentials.
+     * @param array<string, scalar|null> $context
+     */
+    public function trace(TraceLevel $level, string $event, array $context = []): void
+    {
+        $this->trace->emit($level, $event, ['invocation' => $this->id] + $context);
     }
 
     /**

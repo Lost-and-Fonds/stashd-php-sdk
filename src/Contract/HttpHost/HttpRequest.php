@@ -9,7 +9,7 @@ use Stashd\PluginSdk\Contract\IoHost\CredentialReference;
 
 /**
  * Immutable http-host.http-request contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class HttpRequest
 {
@@ -29,7 +29,7 @@ final readonly class HttpRequest
      * Canonical credential value; retained in contract order without normalization.
      * @var CredentialReference|null
      */
-    public ?\Stashd\PluginSdk\Contract\IoHost\CredentialReference $credential;
+    public ?CredentialReference $credential;
 
     /**
      * Canonical headers value; retained in contract order without normalization.
@@ -41,7 +41,7 @@ final readonly class HttpRequest
      * Canonical body value; retained in contract order without normalization.
      * @var ByteStream|null
      */
-    public ?\Stashd\PluginSdk\Contract\IoHost\ByteStream $body;
+    public ?ByteStream $body;
 
     /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.

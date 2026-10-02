@@ -3,11 +3,36 @@
 
 import argparse
 import json
+import subprocess
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / 'resources/contract/wit-schema.json'
 PREFIX = 'Stashd\\PluginSdk\\Contract'
+HELPER_DOCS = {
+    'helper-output': 'One nonempty arbitrary byte chunk from the live stdout or stderr channel; bytes are not lines.',
+    'helper-output.channel': 'The original stdout or stderr channel of these bytes.',
+    'helper-output.bytes': 'Nonempty unmodified output bytes, including carriage returns and invalid text encodings.',
+    'helper-exit': 'Normal child exit, including non-zero codes, optionally returning the still-valid owned staged writer.',
+    'helper-exit.code': 'Signed 32-bit normal child exit code; non-zero does not mean host runtime failure.',
+    'helper-exit.output': 'Owned staged stdout writer returned only after normal exit so the plugin can finish it.',
+    'helper-event': 'One live output chunk, cumulative staged stdout activity count, or the sole terminal event.',
+    'helper-event.output': 'Live stdout or stderr bytes; staged stdout is never duplicated here.',
+    'helper-event.stdout-activity': 'Monotonic cumulative bytes accepted by the staged stdout writer.',
+    'helper-event.terminal': 'Sole process outcome after all accepted output and final staged activity.',
+    'helper-terminal': 'Exactly one normal exit, cancellation, timeout or host/runtime failure before EOF.',
+    'helper-terminal.exited': 'Normal exit returns the valid owned staged writer when stdout was staged.',
+    'helper-terminal.cancelled': 'Cancellation won the first-terminal-condition race; no writer returns.',
+    'helper-terminal.timed-out': 'Host timeout ended the process; its staged writer is discarded.',
+    'helper-terminal.failed': 'Host/runtime failure ended the process; its staged writer is discarded.',
+    'helper-process': 'Invocation-scoped live host process; drop terminates and reaps a running child.',
+    'helper-process.next-event': 'Wait for accepted output or activity, then one terminal event, then sticky EOF.',
+    'helper-process.cancel': 'Request idempotent cancellation; the first determined terminal condition wins.',
+    'helper-output-stream': 'Identifies which child output pipe delivered diagnostic bytes.',
+    'helper-output-stream.stdout': 'Unstaged stdout byte channel; never emitted with staged stdout.',
+    'helper-output-stream.stderr': 'Live stderr byte channel, including when stdout is staged.',
+}
 ENUM_CASE_DOCS = {
     ('input-host', 'deficiency-disposition', 'retryable'): 'The known gap may be filled by later preservation work.',
     ('input-host', 'deficiency-disposition', 'terminal'): 'The known gap cannot be filled by retrying the same work.',
@@ -33,7 +58,7 @@ def main():
     parser.add_argument('--check', action='store_true')
     arguments = parser.parse_args()
     schema = json.loads(SCHEMA.read_text())
-    if schema['package'] != 'stashd:plugin@0.17.0':
+    if schema['package'] != 'stashd:plugin@0.18.0':
         raise SystemExit('Unexpected frozen contract identity')
     interfaces = {}
     for contract in schema['contracts']:
@@ -60,7 +85,7 @@ def main():
             return 'array', 'list<' + element + '>'
         if kind == 'option':
             native, documented = types(interface, specification['value'])
-            return native + '|null', documented + '|null'
+            return '?' + native, documented + '|null'
         if kind == 'borrow':
             return types(interface, specification['value'])
         if kind == 'result':
@@ -70,16 +95,19 @@ def main():
     outputs = {}
     for interface, definition in interfaces.items():
         namespace = PREFIX + '\\' + pascal(interface)
+        def prose(name, fallback):
+            return HELPER_DOCS[name] if name in HELPER_DOCS else fallback
+
         for name, record in definition['records'].items():
             classname = pascal(name)
             fields = record['fields']
             lines = ['<?php', '', 'declare(strict_types=1);', '', 'namespace ' + namespace + ';', '',
-                     '/**', ' * Immutable ' + interface + '.' + name + ' contract fact.',
-                     ' * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.', ' */',
+                     '/**', ' * ' + prose(name, 'Immutable ' + interface + '.' + name + ' contract fact.'),
+                     ' * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.', ' */',
                      'final readonly class ' + classname, '{']
             for field in fields:
                 native, documented = types(interface, field['type'])
-                lines.extend(['    /**', '     * Canonical ' + field['name'] + ' value; retained in contract order without normalization.',
+                lines.extend(['    /**', '     * ' + prose(name + '.' + field['name'], 'Canonical ' + field['name'] + ' value; retained in contract order without normalization.'),
                               '     * @var ' + documented, '     */', '    public ' + native + ' $' + camel(field['name']) + ';', ''])
             lines.extend(['    /**', '     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.'])
             for field in fields:
@@ -97,27 +125,27 @@ def main():
             outputs[ROOT / 'src/Contract' / pascal(interface) / (classname + '.php')] = '\n'.join(lines)
         for name, enum in definition['enums'].items():
             lines = ['<?php', '', 'declare(strict_types=1);', '', 'namespace ' + namespace + ';', '',
-                     '/**', ' * Closed canonical cases for ' + interface + '.' + name + '; spelling is protocol identity.', ' */',
+                     '/**', ' * ' + prose(name, 'Closed canonical cases for ' + interface + '.' + name + '; spelling is protocol identity.'), ' */',
                      'enum ' + pascal(name) + ': string', '{']
             for value in enum['values']:
-                description = ENUM_CASE_DOCS[(interface, name, value)] if (interface, name, value) in ENUM_CASE_DOCS else 'Canonical ' + value + ' case of ' + name + '.'
+                description = prose(name + '.' + value, ENUM_CASE_DOCS[(interface, name, value)] if (interface, name, value) in ENUM_CASE_DOCS else 'Canonical ' + value + ' case of ' + name + '.')
                 lines.extend(['    /**', '     * ' + description, '     */', '    case ' + pascal(value) + " = '" + value + "';"])
             lines.extend(['}', ''])
             outputs[ROOT / 'src/Contract' / pascal(interface) / (pascal(name) + '.php')] = '\n'.join(lines)
         for name, variant in definition['variants'].items():
             base = pascal(name)
             lines = ['<?php', '', 'declare(strict_types=1);', '', 'namespace ' + namespace + ';', '',
-                     '/**', ' * Typed union of the canonical ' + interface + '.' + name + ' cases.', ' */',
+                     '/**', ' * ' + prose(name, 'Typed union of the canonical ' + interface + '.' + name + ' cases.'), ' */',
                      'interface ' + base, '{', '}', '']
             outputs[ROOT / 'src/Contract' / pascal(interface) / (base + '.php')] = '\n'.join(lines)
             for case in variant['values']:
                 classname = base + pascal(case['name'])
                 lines = ['<?php', '', 'declare(strict_types=1);', '', 'namespace ' + namespace + ';', '',
-                         '/**', ' * Canonical ' + case['name'] + ' branch of ' + interface + '.' + name + '.', ' */',
+                         '/**', ' * ' + prose(name + '.' + case['name'], 'Canonical ' + case['name'] + ' branch of ' + interface + '.' + name + '.'), ' */',
                          'final readonly class ' + classname + ' implements ' + base, '{']
                 if case['type'] is not None:
                     native, documented = types(interface, case['type'])
-                    lines.extend(['    /**', '     * Payload belonging only to this variant case, preserving optional absence and list order.',
+                    lines.extend(['    /**', '     * ' + prose(name + '.' + case['name'], 'Payload belonging only to this variant case, preserving optional absence and list order.'),
                                   '     * @var ' + documented, '     */', '    public ' + native + ' $value;', '',
                                   '    /**', '     * Construct this specific branch without string tags or raw wire objects.',
                                   '     * @param ' + documented + ' $value', '     */',
@@ -152,14 +180,14 @@ def main():
         for resource in definition['resources']:
             classname = pascal(resource['name'])
             lines = ['<?php', '', 'declare(strict_types=1);', '', 'namespace ' + namespace + ';', '',
-                     '/**', ' * Invocation-scoped ' + interface + '.' + resource['name'] + ' capability.',
+                     '/**', ' * ' + prose(resource['name'], 'Invocation-scoped ' + interface + '.' + resource['name'] + ' capability.'),
                      ' * Explicit release ends ownership; retained objects cannot extend invocation authority.', ' */',
                      'interface ' + classname, '{', '    /**',
                      '     * Explicitly release ownership; duplicate release and later use violate resource lifetime.',
                      '     */', '    public function close(): void;', '']
             for function in resource['functions']:
                 native, documented = types(interface, function['result'])
-                lines.extend(['    /**', '     * Invoke canonical ' + resource['name'] + '.' + function['name'] + ' on this live resource.',
+                lines.extend(['    /**', '     * ' + prose(resource['name'] + '.' + function['name'], 'Invoke canonical ' + resource['name'] + '.' + function['name'] + ' on this live resource.'),
                               '     * Ordinary host failures are distinct from protocol violations.'])
                 parameters = []
                 for argument in function['arguments']:
@@ -217,6 +245,8 @@ def main():
         kind = specification['kind']
         if kind in ('list', 'option', 'borrow'):
             return has_resource(interface, specification['value'], visited)
+        if kind == 'result':
+            return has_resource(interface, specification['ok'], visited) or has_resource(interface, specification['error'], visited)
         if kind != 'named':
             return False
         name = specification['name']
@@ -228,7 +258,9 @@ def main():
         visited.add((owner, name))
         definition = interfaces[owner]
         if name in definition['records']:
-            return any(has_resource(owner, field['type'], visited) for field in definition['records'][name]['fields'])
+            return any(has_resource(owner, field['type'], visited.copy()) for field in definition['records'][name]['fields'])
+        if name in definition['variants']:
+            return any(has_resource(owner, case['type'], visited.copy()) for case in definition['variants'][name]['values'])
         return False
 
     for interface, definition in interfaces.items():
@@ -262,6 +294,8 @@ def main():
                           '    public static function encode' + pascal(name) + '(' + classname + ' $value): string', '    {',
                           '        return $value->value;', '    }', ''])
         for name, variant in definition['variants'].items():
+            if has_resource(interface, {'kind': 'named', 'name': name}):
+                continue
             classname = named(interface, name)
             lines.extend(['    /**', '     * Decode a payloadless string or exact tagged payload, never accepting extra fields.', '     */',
                           '    public static function decode' + pascal(name) + '(mixed $value): ' + classname, '    {',
@@ -285,14 +319,36 @@ def main():
         lines.extend(['}', ''])
         outputs[ROOT / 'src/Runtime/Codec/Generated' / (pascal(interface) + 'Codec.php')] = '\n'.join(lines)
 
+    generated_roots = [ROOT / 'src/Contract', ROOT / 'src/Runtime/Codec/Generated']
+    obsolete = sorted(path for directory in generated_roots for path in directory.rglob('*.php') if path not in outputs)
+    if arguments.check and obsolete:
+        raise SystemExit('Obsolete generated contract files: ' + ', '.join(str(path.relative_to(ROOT)) for path in obsolete))
+    if not arguments.check:
+        for path in obsolete:
+            path.unlink()
+
     failures = []
+    fixer = [str(ROOT / 'vendor/bin/php-cs-fixer'), 'fix', '--allow-risky=yes',
+             '--config=.php-cs-fixer.dist.php', '--path-mode=override', '--using-cache=no']
     for path, content in outputs.items():
-        if arguments.check:
-            if not path.exists() or path.read_text() != content:
-                failures.append(str(path.relative_to(ROOT)))
-        else:
+        if not arguments.check:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content)
+    if not arguments.check:
+        subprocess.run(fixer + [str(path) for path in outputs], cwd=ROOT, check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for path, content in outputs.items():
+        if arguments.check:
+            if not path.exists():
+                failures.append(str(path.relative_to(ROOT)))
+                continue
+            with tempfile.TemporaryDirectory() as directory:
+                candidate = Path(directory) / path.name
+                candidate.write_text(content)
+                result = subprocess.run(fixer + [str(candidate)], cwd=ROOT,
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if result.returncode != 0 or path.read_text() != candidate.read_text():
+                    failures.append(str(path.relative_to(ROOT)))
     if failures:
         raise SystemExit('Stale generated contract files: ' + ', '.join(failures))
     print(f'{len(outputs)} frozen contract declarations verified' if arguments.check else f'{len(outputs)} contract declarations generated')

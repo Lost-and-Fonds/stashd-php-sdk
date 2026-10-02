@@ -13,7 +13,7 @@ final readonly class DiscoveryFinishExhaustive implements DiscoveryFinish
      * Payload belonging only to this variant case, preserving optional absence and list order.
      * @var DiscoveryRefreshState|null
      */
-    public ?\Stashd\PluginSdk\Contract\InputHost\DiscoveryRefreshState $value;
+    public ?DiscoveryRefreshState $value;
 
     /**
      * Construct this specific branch without string tags or raw wire objects.

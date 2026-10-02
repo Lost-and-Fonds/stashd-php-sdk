@@ -6,7 +6,7 @@ namespace Stashd\PluginSdk\Contract\EnrichmentPlugin;
 
 /**
  * Immutable enrichment-plugin.configuration-choice contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class ConfigurationChoice
 {

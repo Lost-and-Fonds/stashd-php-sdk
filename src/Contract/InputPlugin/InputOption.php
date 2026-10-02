@@ -6,7 +6,7 @@ namespace Stashd\PluginSdk\Contract\InputPlugin;
 
 /**
  * Immutable input-plugin.input-option contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class InputOption
 {

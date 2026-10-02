@@ -19,13 +19,12 @@ and [first-party examples](docs/first-party-forcing-cases.md) notes record the
 planned developer experience. This pass aligns the plan; it does not implement
 the SDK or make the starter plugins runnable yet.
 
-## First implementation slice after review
+## Contract foundation
 
-Update the pinned plugin-api schema and language-neutral vectors to 0.18,
-then regenerate and review the exact contract types/codecs. Replace the stale
-0.17 helper result with the canonical process event, terminal and owned writer
-shapes. Exercise resource transfer, frame-sized live output, staged activity,
-cancellation, cleanup and secret-safe traces before adding the public PHP helper
-API. The current pinned Composer package, schema snapshot, generator guard and
-generated helper result still describe 0.17; passing scaffold tests do not
-establish 0.18 conformance. Do not start this slice during synchronization.
+The vendored schema and vectors now target frozen 0.18 independently of the
+plugin-api Composer package version. Exact contract declarations include the
+live helper-process events and terminal outcomes. Internal runtime code tracks
+owned resource transfers, staged writer return, process event order and safe
+diagnostics. This foundation is not a public helper API or a host subprocess
+implementation. Host pipe draining and backpressure still require real-host
+conformance tests before release.

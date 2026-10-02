@@ -15,7 +15,7 @@ use stdClass;
 /**
  * Host stream proxy enforcing nonempty chunks, sticky EOF and invocation ownership.
  */
-final class RemoteByteStream implements ByteStream
+final class RemoteByteStream implements ByteStream, OwnedResource
 {
     /**
      * Invocation owning this resource; retaining the proxy cannot retain authority.
@@ -39,7 +39,21 @@ final class RemoteByteStream implements ByteStream
     {
         $this->invocation = $invocation;
         $this->id = $id;
-        $invocation->resources->accept($invocation->id, $id, 'stashd:plugin/io-host.byte-stream');
+        $invocation->resources->requireOwned($invocation->id, $id, 'stashd:plugin/io-host.byte-stream');
+    }
+
+    /**
+     * Verify the stream proxy belongs to this invocation before an owned transfer.
+     */
+    public function resourceId(ResourceTable $table, string $invocation, string $type): string
+    {
+        if ($this->invocation->resources !== $table || $this->invocation->id !== $invocation || $type !== 'stashd:plugin/io-host.byte-stream') {
+            throw new ProtocolViolation('Byte stream proxy belongs to another invocation or type');
+        }
+
+        $table->requireOwned($invocation, $this->id, $type);
+
+        return $this->id;
     }
 
     /**

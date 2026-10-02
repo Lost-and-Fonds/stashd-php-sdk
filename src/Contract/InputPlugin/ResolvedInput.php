@@ -9,7 +9,7 @@ use Stashd\PluginSdk\Shared\Unsigned64;
 
 /**
  * Immutable input-plugin.resolved-input contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class ResolvedInput
 {
@@ -35,7 +35,7 @@ final readonly class ResolvedInput
      * Canonical size-bytes value; retained in contract order without normalization.
      * @var Unsigned64|null
      */
-    public ?\Stashd\PluginSdk\Shared\Unsigned64 $sizeBytes;
+    public ?Unsigned64 $sizeBytes;
 
     /**
      * Canonical size-estimated value; retained in contract order without normalization.

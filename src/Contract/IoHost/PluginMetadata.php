@@ -6,7 +6,7 @@ namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
  * Immutable io-host.plugin-metadata contract fact.
- * Field order and opaque values follow stashd:plugin@0.17.0 without normalization.
+ * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
  */
 final readonly class PluginMetadata
 {
