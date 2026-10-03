@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Broadcast;
 
 /**
- * One plugin-defined destination or operation setting.
+ * One named value used by a Broadcast destination or operation.
  */
 final readonly class Setting
 {
     /**
-     * Plugin-defined key, preserved without normalization.
+     * Plugin-defined setting name.
      */
     public string $key;
 
     /**
-     * Text, boolean, or signed integer value supplied by the host.
+     * Setting value.
      */
     public string|bool|int $value;
 
     /**
-     * Keep the setting's key and typed value together.
+     * Create a setting.
      */
     public function __construct(string $key, string|bool|int $value)
     {
