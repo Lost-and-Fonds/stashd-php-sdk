@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Helper;
 
 /**
- * Cancellation won the process's terminal race; no staged writer returns.
+ * The helper was cancelled. Any staged stdout writer is no longer usable.
  */
 final readonly class Cancelled
 {
