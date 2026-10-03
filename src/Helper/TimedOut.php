@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Helper;
 
 /**
- * Host timeout ended the helper; its staged writer was discarded.
+ * The host stopped the helper because it exceeded its timeout.
  */
 final readonly class TimedOut
 {
