@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Helper;
 
 /**
- * Host or runtime failure ended the process, not a normal nonzero child exit.
+ * The host could not start or manage the helper normally.
  */
 final readonly class Failed
 {
     /**
-     * Host-supplied failure detail, which is not a portable child exit status.
+     * Diagnostic message supplied by the host.
      */
     public string $detail;
 
     /**
-     * Retain the diagnostic supplied with the terminal failure.
+     * Describe a host or runtime failure.
      */
     public function __construct(string $detail)
     {
