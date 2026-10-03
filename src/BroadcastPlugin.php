@@ -8,13 +8,12 @@ use Stashd\PluginSdk\Broadcast\Operation;
 use Stashd\PluginSdk\Broadcast\OperationResult;
 
 /**
- * A Broadcast operation that can run approved helpers for the current destination.
+ * Implement Broadcast operations exposed by this plugin.
  */
 interface BroadcastPlugin
 {
     /**
-     * Handle one host-selected operation with helpers scoped to this call.
-     * The operation name is plugin-defined and remains unchanged.
+     * Run one named Broadcast operation. Helpers contains only the capabilities available to this call.
      */
     public function operation(Operation $request, Helpers $helpers): OperationResult;
 }
