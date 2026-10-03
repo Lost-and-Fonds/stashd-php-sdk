@@ -5,24 +5,24 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Broadcast;
 
 /**
- * Choices and settings returned from an interactive destination operation.
+ * The choices and setting changes returned by a Broadcast operation.
  */
 final readonly class OperationResult
 {
     /**
-     * Ordered choices offered to the caller.
+     * Choices to show the caller.
      * @var list<Choice>
      */
     public array $choices;
 
     /**
-     * Ordered plugin-defined setting updates.
+     * Destination setting values to update.
      * @var list<Setting>
      */
     public array $values;
 
     /**
-     * Return only values intentionally produced by this operation.
+     * Create the operation result.
      * @param list<Choice> $choices
      * @param list<Setting> $values
      */
