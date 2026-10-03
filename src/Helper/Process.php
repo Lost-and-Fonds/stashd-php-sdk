@@ -17,17 +17,17 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 
 /**
- * A live host-approved helper, read one event at a time during the plugin call.
+ * A running helper process.
  */
 final class Process
 {
     /**
-     * The process belonging to the active plugin call.
+     * The underlying process for this plugin call.
      */
     private readonly RemoteHelperProcess $process;
 
     /**
-     * Wrap the live process without exposing protocol details.
+     * Create the public wrapper around a running helper.
      */
     public function __construct(RemoteHelperProcess $process)
     {
@@ -35,7 +35,7 @@ final class Process
     }
 
     /**
-     * Yield each live byte chunk or activity update, then one terminal outcome and EOF.
+     * Read events as they happen. Iteration yields output or activity, then one final outcome, and stops at EOF.
      * @return \Generator<int, Output|StdoutActivity|Exited|Cancelled|TimedOut|Failed>
      */
     public function events(): \Generator
@@ -60,7 +60,7 @@ final class Process
     }
 
     /**
-     * Request cancellation; accepted output and the terminal event remain readable.
+     * Ask the host to cancel the helper. You can keep reading events to receive remaining output and the final outcome.
      */
     public function cancel(): void
     {
@@ -68,7 +68,7 @@ final class Process
     }
 
     /**
-     * Stop observing and drop the process; a running child is terminated by the host.
+     * Release the process. If it is still running, the host stops it.
      */
     public function close(): void
     {
