@@ -7,17 +7,17 @@ namespace Stashd\PluginSdk\Helper;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedArtifact;
 
 /**
- * Finished staged output that can be read again during this plugin call.
+ * Finished temporary output from a helper or plugin.
  */
 final class Artifact
 {
     /**
-     * Keep the finished output tied to its original call.
+     * The host-managed finished output.
      */
     private readonly RemoteStagedArtifact $artifact;
 
     /**
-     * Wrap the host-issued finished output without exposing its receipt.
+     * Create a readable artifact from finished staged output.
      */
     public function __construct(RemoteStagedArtifact $artifact)
     {
@@ -25,7 +25,7 @@ final class Artifact
     }
 
     /**
-     * Read the finished bytes lazily and close the reader when iteration ends.
+     * Read the artifact a chunk at a time. The stream closes automatically when iteration ends.
      * @return \Generator<int, string>
      */
     public function chunks(): \Generator
