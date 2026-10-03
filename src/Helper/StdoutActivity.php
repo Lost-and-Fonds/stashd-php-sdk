@@ -7,17 +7,17 @@ namespace Stashd\PluginSdk\Helper;
 use Stashd\PluginSdk\Shared\Unsigned64;
 
 /**
- * Cumulative stdout bytes accepted by the staged writer, not a percentage.
+ * How many stdout bytes the helper has written to staged output so far. This is activity, not progress.
  */
 final readonly class StdoutActivity
 {
     /**
-     * Exact cumulative byte count, including values beyond PHP's signed integer range.
+     * Total staged stdout bytes accepted so far.
      */
     public Unsigned64 $bytes;
 
     /**
-     * Preserve the host's cumulative count without rounding.
+     * Create an activity event from the exact byte count.
      */
     public function __construct(Unsigned64 $bytes)
     {
