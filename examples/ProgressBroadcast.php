@@ -14,29 +14,29 @@ use Stashd\PluginSdk\Helper\StdoutActivity;
 use Stashd\PluginSdk\Helpers;
 
 /**
- * Demonstrate how a plugin reads real progress from a host-approved helper.
+ * Example Broadcast plugin that reads live progress from a helper.
  */
 final class ProgressBroadcast implements BroadcastPlugin
 {
     /**
-     * Provider-reported percentages, not inferred from byte counts.
+     * Progress percentages parsed from the helper's own output.
      * @var list<int>
      */
     public array $percentages = [];
 
     /**
-     * Observed cumulative staged stdout byte counts.
+     * Staged stdout byte counts reported while the helper runs.
      * @var list<string>
      */
     public array $activity = [];
 
     /**
-     * Bytes read from the finished staged output.
+     * Finished helper output.
      */
     public string $saved = '';
 
     /**
-     * Run a provider-like helper and parse carriage-return progress from stderr.
+     * Start a helper, parse its carriage-return progress, then read its staged output.
      */
     public function operation(Operation $request, Helpers $helpers): OperationResult
     {
