@@ -7,17 +7,17 @@ namespace Stashd\PluginSdk\Helper;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 
 /**
- * Unfinished staged output; transferring it to a helper suspends use until normal return.
+ * Temporary output that can be written now or handed to a helper.
  */
 final class Writer
 {
     /**
-     * Keep the invocation-bound writer private to prevent raw handle access.
+     * The host-managed staging writer.
      */
     private readonly RemoteStagedWriter $writer;
 
     /**
-     * Wrap a live writer returned by the host or by a finished helper.
+     * Create writable staged output.
      */
     public function __construct(RemoteStagedWriter $writer)
     {
@@ -25,7 +25,7 @@ final class Writer
     }
 
     /**
-     * Supply the writer to the helper boundary, which checks ownership before transfer.
+     * Return the underlying writer for one-time transfer to a helper.
      */
     public function transfer(): RemoteStagedWriter
     {
@@ -33,7 +33,7 @@ final class Writer
     }
 
     /**
-     * Append raw bytes before the writer is transferred to a helper.
+     * Write bytes to the staged output.
      */
     public function write(string $bytes): void
     {
@@ -41,7 +41,7 @@ final class Writer
     }
 
     /**
-     * Finish returned output once and receive a descriptor that can be reopened.
+     * Finish the output and make it readable as an Artifact.
      */
     public function finish(): Artifact
     {
@@ -49,7 +49,7 @@ final class Writer
     }
 
     /**
-     * Discard unfinished output; transferred writers cannot be discarded by the plugin.
+     * Discard unfinished output. A writer already handed to a helper cannot be closed here.
      */
     public function close(): void
     {
