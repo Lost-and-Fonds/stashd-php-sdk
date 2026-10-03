@@ -46,23 +46,22 @@ final class HelperProcessCall
         $writerId = $output?->resourceId($invocation->resources, $invocation->id, 'stashd:plugin/io-host.staged-writer');
         $result = $invocation->call('stashd:plugin/io-host.start-helper', $params, $transfers);
 
-        if (!$result instanceof stdClass) {
-            $invocation->violate('Helper start requires a WIT result');
-        }
-
-        if (property_exists($result, 'error')) {
-            Values::record($result, ['error']);
-
-            throw new HostFailure(IoHostCodec::decodeHelperError($result->error));
-        }
-
-        Values::record($result, ['ok']);
-
         try {
+            if (!$result instanceof stdClass) {
+                throw new ProtocolViolation('Helper start requires a WIT result');
+            }
+
+            if (property_exists($result, 'error')) {
+                Values::record($result, ['error']);
+
+                throw new HostFailure(IoHostCodec::decodeHelperError($result->error));
+            }
+
+            Values::record($result, ['ok']);
             $process = ResourceValueCodec::decode($result->ok, ['kind' => 'named', 'name' => 'helper-process'], 'io-host', $invocation, $writerId);
 
             if (!$process instanceof RemoteHelperProcess) {
-                $invocation->violate('Host did not return a helper process');
+                throw new ProtocolViolation('Host did not return a helper process');
             }
 
             return $process;

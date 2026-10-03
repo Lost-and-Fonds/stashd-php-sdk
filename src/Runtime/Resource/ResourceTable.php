@@ -72,6 +72,15 @@ final class ResourceTable
     }
 
     /**
+     * Permanently retire a transferred writer discarded by its process.
+     */
+    public function discardTransferred(string $invocation, string $id, string $type): void
+    {
+        $this->requireTransferred($invocation, $id, $type);
+        $this->entries[$id]['state'] = 'dropped';
+    }
+
+    /**
      * Validate type, invocation and ownership before permitting any resource operation.
      */
     public function requireOwned(string $invocation, string $id, string $type): void

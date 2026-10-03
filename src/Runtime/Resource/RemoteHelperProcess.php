@@ -155,9 +155,15 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
             }
 
             if ($this->writerId !== null) {
+                $returned = $terminal instanceof HelperTerminalExited && $terminal->value->output !== null;
+
+                if (!$returned) {
+                    $this->invocation->resources->discardTransferred($this->invocation->id, $this->writerId, 'stashd:plugin/io-host.staged-writer');
+                }
+
                 $this->invocation->trace(TraceLevel::Ludicrous, 'helper.writer', [
                     'resource-id' => $this->writerId,
-                    'outcome' => $terminal instanceof HelperTerminalExited && $terminal->value->output !== null ? 'returned' : 'discarded',
+                    'outcome' => $returned ? 'returned' : 'discarded',
                 ]);
             }
 
@@ -196,6 +202,7 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
         $this->invocation->drop($this->id, 'stashd:plugin/io-host.helper-process');
 
         if (!$this->terminal && $this->writerId !== null) {
+            $this->invocation->resources->discardTransferred($this->invocation->id, $this->writerId, 'stashd:plugin/io-host.staged-writer');
             $this->invocation->trace(TraceLevel::Ludicrous, 'helper.writer', [
                 'resource-id' => $this->writerId, 'outcome' => 'discarded',
             ]);

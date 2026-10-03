@@ -13,6 +13,8 @@ use Stashd\PluginSdk\Runtime\Resource\OwnedResource;
 use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 use Stashd\PluginSdk\Runtime\Resource\RemoteHelperProcess;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
+use Stashd\PluginSdk\Runtime\Resource\RemoteStagingArea;
+use Stashd\PluginSdk\Shared\Unsigned64;
 use stdClass;
 
 /**
@@ -83,7 +85,7 @@ final class ResourceValueCodec
         if ($definition['kind'] === 'resource') {
             $marker = self::marker($wire, $type);
 
-            if ($type === 'stashd:plugin/io-host.staged-writer') {
+            if ($type === 'stashd:plugin/io-host.staged-writer' && $writerId !== null) {
                 $invocation->resources->returnTransferred($invocation->id, self::name($marker->id), $type);
             } else {
                 $invocation->resources->accept($invocation->id, self::name($marker->id), $type);
@@ -93,6 +95,7 @@ final class ResourceValueCodec
                 'stashd:plugin/io-host.staged-writer' => new RemoteStagedWriter($invocation, self::name($marker->id)),
                 'stashd:plugin/io-host.byte-stream' => new RemoteByteStream($invocation, self::name($marker->id)),
                 'stashd:plugin/io-host.helper-process' => new RemoteHelperProcess($invocation, self::name($marker->id), $writerId),
+                'stashd:plugin/io-host.staging-area' => new RemoteStagingArea($invocation, self::name($marker->id)),
                 default => self::unsupportedResource($type),
             };
         }
@@ -164,7 +167,24 @@ final class ResourceValueCodec
         }
 
         if ($kind === 'list') {
-            return array_map(static fn(mixed $element): mixed => self::encode($element, self::node($schema['value']), $interface, $invocation, $transfers), Values::list($value));
+            $encoded = [];
+
+            foreach (Values::list($value) as $element) {
+                $encoded[] = self::encode($element, self::node($schema['value']), $interface, $invocation, $transfers);
+            }
+
+            return $encoded;
+        }
+
+        if ($kind === 'scalar') {
+            return match ($schema['name']) {
+                'string' => Values::text($value),
+                'bool' => Values::boolean($value),
+                'u64' => $value instanceof \Stashd\PluginSdk\Shared\Unsigned64 ? $value->decimal : Values::unsigned($value)->decimal,
+                's64' => (string) Values::signed($value),
+                'f32', 'f64' => Values::floating($schema['name'], $value),
+                default => Values::integer(self::name($schema['name']), $value),
+            };
         }
 
         if ($kind === 'borrow') {

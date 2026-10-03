@@ -11,6 +11,7 @@ use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\Runtime\Codec\FrameChannel;
 use Stashd\PluginSdk\Runtime\Codec\Json;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
+use Stashd\PluginSdk\Runtime\HostFailure;
 use Stashd\PluginSdk\Runtime\Invocation;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use Stashd\PluginSdk\Runtime\Resource\HelperProcessCall;
@@ -127,6 +128,85 @@ it('returns only the transferred staged writer after the canonical staged termin
     fclose($input);
     fclose($output);
     fclose($sink);
+});
+
+it('rejects duplicate nested ownership before sending a request', function (): void {
+    [$invocation, $host, $input, $output, $sink] = helperFixture([]);
+    $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
+    $writer = new RemoteStagedWriter($invocation, 'writer-1');
+
+    expect(fn() => $invocation->typedCall('stashd:plugin/io-host.start-helper', [
+        'outputs' => [$writer, $writer],
+    ], [
+        'outputs' => ['kind' => 'list', 'value' => ['kind' => 'named', 'name' => 'staged-writer']],
+    ], ['kind' => 'option', 'value' => ['kind' => 'named', 'name' => 'helper-event']], 'io-host'))->toThrow(ProtocolViolation::class);
+    expect(ftell($output))->toBe(0);
+    $invocation->cleanup();
+    fclose($input);
+    fclose($output);
+    fclose($sink);
+});
+
+it('consumes transferred writers on start failure and rejects malformed helper results', function (): void {
+    foreach ([(object) ['error' => 'failed'], (object) ['ok' => null, 'error' => 'failed']] as $result) {
+        [$invocation, $host, $input, $output, $sink] = helperFixture([$result]);
+        $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
+        $writer = new RemoteStagedWriter($invocation, 'writer-1');
+
+        try {
+            HelperProcessCall::start($invocation, 'approved', [], null, $writer, []);
+            test()->fail('Helper start must fail');
+        } catch (HostFailure|ProtocolViolation) {
+            expect(fn() => $writer->close())->toThrow(ProtocolViolation::class);
+        }
+
+        $invocation->cleanup();
+        fclose($input);
+        fclose($output);
+        fclose($sink);
+    }
+});
+
+it('discards staged writers on abnormal terminal and on live process drop', function (): void {
+    foreach ([helperEventWire(['terminal' => 'cancelled']), helperEventWire(['terminal' => ['exited' => ['code' => 1, 'output' => null]]]), null] as $terminal) {
+        $results = [(object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')]];
+
+        if ($terminal !== null) {
+            $results[] = $terminal;
+        } else {
+            $results[] = null;
+        }
+
+        [$invocation, $host, $input, $output, $sink] = helperFixture($results);
+        $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
+        $writer = new RemoteStagedWriter($invocation, 'writer-1');
+        $process = HelperProcessCall::start($invocation, 'approved', [], null, $writer, []);
+
+        if ($terminal === null) {
+            $process->close();
+        } else {
+            $process->nextEvent();
+        }
+
+        expect(fn() => $invocation->resources->returnTransferred('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer'))->toThrow(ProtocolViolation::class);
+        $invocation->cleanup();
+        fclose($input);
+        fclose($output);
+        fclose($sink);
+    }
+});
+
+it('rejects EOF before terminal and staged stdout payloads', function (): void {
+    foreach ([null, helperEventWire(['output' => ['channel' => 'stdout', 'bytes_hex' => '00']])] as $event) {
+        $results = [(object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')], $event];
+        [$invocation, $host, $input, $output, $sink] = helperFixture($results);
+        $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
+        $process = HelperProcessCall::start($invocation, 'approved', [], null, new RemoteStagedWriter($invocation, 'writer-1'), []);
+        expect(fn() => $process->nextEvent())->toThrow(ProtocolViolation::class);
+        fclose($input);
+        fclose($output);
+        fclose($sink);
+    }
 });
 
 it('measures the complete response envelope for the canonical segmented output vector', function (): void {

@@ -84,6 +84,14 @@ final class RemoteStagedWriter implements StagedWriter, OwnedResource
     }
 
     /**
+     * Finish output while retaining its invocation for a later mediated reopen.
+     */
+    public function finishArtifact(): RemoteStagedArtifact
+    {
+        return new RemoteStagedArtifact($this->invocation, $this->finish());
+    }
+
+    /**
      * Explicitly discard unfinished staged output and invalidate this proxy.
      */
     public function close(): void
