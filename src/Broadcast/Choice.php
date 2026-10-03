@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Broadcast;
 
 /**
- * One selectable value offered by an interactive destination operation.
+ * One option a Broadcast operation can return to the caller.
  */
 final readonly class Choice
 {
     /**
-     * Plugin-defined choice identity.
+     * Value returned when the caller chooses this option.
      */
     public string $value;
 
     /**
-     * Human-readable label shown to the caller.
+     * Label shown to the caller.
      */
     public string $label;
 
     /**
-     * Associate a choice identity with its label.
+     * Create one selectable option.
      */
     public function __construct(string $value, string $label)
     {
