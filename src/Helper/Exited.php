@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Helper;
 
 /**
- * Normal child exit; a nonzero exit code remains a normal exit, not a host failure.
+ * The helper exited normally. The exit code may still be non-zero.
  */
 final readonly class Exited
 {
     /**
-     * Signed child exit code.
+     * Exit code returned by the helper.
      */
     public int $code;
 
     /**
-     * Writer returned only when staged stdout remained valid.
+     * Staged stdout returned after a normal exit, if one was used.
      */
     public ?Writer $output;
 
     /**
-     * Keep the terminal exit code and returned writer together.
+     * Describe a normal helper exit.
      */
     public function __construct(int $code, ?Writer $output)
     {
