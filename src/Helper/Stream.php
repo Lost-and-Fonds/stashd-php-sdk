@@ -7,17 +7,17 @@ namespace Stashd\PluginSdk\Helper;
 use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 
 /**
- * Invocation-scoped input stream whose ownership transfers when a helper starts.
+ * Input bytes that can be passed to a helper as stdin.
  */
 final class Stream
 {
     /**
-     * Keep the host stream private to this plugin call.
+     * The host-managed input stream.
      */
     private readonly RemoteByteStream $stream;
 
     /**
-     * Wrap a host-granted stream for helper stdin.
+     * Create helper input from a host-provided stream.
      */
     public function __construct(RemoteByteStream $stream)
     {
@@ -25,7 +25,7 @@ final class Stream
     }
 
     /**
-     * Supply stdin to the helper boundary for owned transfer.
+     * Return the underlying stream for one-time transfer to a helper.
      */
     public function transfer(): RemoteByteStream
     {
@@ -33,7 +33,7 @@ final class Stream
     }
 
     /**
-     * Release a stream that has not already been transferred.
+     * Close the input if it has not already been handed to a helper.
      */
     public function close(): void
     {
