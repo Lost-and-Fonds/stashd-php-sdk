@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Helper;
 
 /**
- * Identifies the original pipe that produced a helper output chunk.
+ * Which helper output stream produced a chunk.
  */
 enum OutputStream
 {
     /**
-     * Unstaged standard output bytes.
+     * Standard output. This is not emitted when stdout is being written to staged output.
      */
     case Stdout;
 
     /**
-     * Standard error bytes, also available when stdout is staged.
+     * Standard error. This remains available when stdout is staged.
      */
     case Stderr;
 }
