@@ -15,23 +15,23 @@ use Stashd\PluginSdk\Runtime\Resource\HelperProcessCall;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagingArea;
 
 /**
- * Start approved helpers and stage their output during a plugin call.
+ * Run helper tools and create temporary output for the current plugin call.
  */
 final class Helpers
 {
     /**
-     * Invocation supplying these host-managed operations.
+     * The current plugin call.
      */
     private readonly Invocation $invocation;
 
     /**
-     * Selectors supplied by the host for this plugin call, never raw secret values.
+     * Credentials the host made available to this call. These are selectors, not secret values.
      * @var list<Credential>
      */
     private readonly array $credentials;
 
     /**
-     * Receive only the capabilities and credential selectors granted to this plugin call.
+     * Create the helper API for one plugin call.
      * @param list<Credential> $credentials
      */
     public function __construct(Invocation $invocation, array $credentials = [])
@@ -41,7 +41,7 @@ final class Helpers
     }
 
     /**
-     * Get the selectors granted by the host for this plugin call.
+     * Return the credentials this plugin call may pass to helpers.
      * @return list<Credential>
      */
     public function credentials(): array
@@ -50,8 +50,8 @@ final class Helpers
     }
 
     /**
-     * Start an approved helper; arguments are passed unchanged, not through a shell.
-     * Supply only credential selectors granted for this call; the host resolves their values.
+     * Start a helper tool. Arguments are passed directly, without a shell.
+     * Pass only credentials returned by credentials(); the host supplies their secret values.
      * @param list<string> $args
      * @param list<Credential> $credentials
      */
@@ -71,7 +71,7 @@ final class Helpers
     }
 
     /**
-     * Create unfinished output that a helper may fill before returning it on normal exit.
+     * Create temporary output that PHP can write to or hand to a helper.
      */
     public function stage(?string $mediaType = null): Writer
     {
