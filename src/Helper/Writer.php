@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Helper;
 
+use LogicException;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 
 /**
@@ -12,9 +13,9 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 final class Writer
 {
     /**
-     * The host-managed staging writer.
+     * The staging writer, or null after handing it to a helper.
      */
-    private readonly RemoteStagedWriter $writer;
+    private ?RemoteStagedWriter $writer;
 
     /**
      * Create writable staged output.
@@ -29,7 +30,10 @@ final class Writer
      */
     public function transfer(): RemoteStagedWriter
     {
-        return $this->writer;
+        $writer = $this->writer ?? throw new LogicException('Writer was already handed to a helper');
+        $this->writer = null;
+
+        return $writer;
     }
 
     /**
@@ -37,7 +41,13 @@ final class Writer
      */
     public function write(string $bytes): void
     {
-        $this->writer->write(array_values(unpack('C*', $bytes)));
+        $values = [];
+
+        for ($index = 0, $length = strlen($bytes); $index < $length; ++$index) {
+            $values[] = ord($bytes[$index]);
+        }
+
+        ($this->writer ?? throw new LogicException('Writer was already handed to a helper'))->write($values);
     }
 
     /**
@@ -45,7 +55,7 @@ final class Writer
      */
     public function finish(): Artifact
     {
-        return new Artifact($this->writer->finishArtifact());
+        return new Artifact(($this->writer ?? throw new LogicException('Writer was already handed to a helper'))->finishArtifact());
     }
 
     /**
@@ -53,6 +63,6 @@ final class Writer
      */
     public function close(): void
     {
-        $this->writer->close();
+        ($this->writer ?? throw new LogicException('Writer was already handed to a helper'))->close();
     }
 }

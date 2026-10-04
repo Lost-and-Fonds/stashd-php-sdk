@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk;
 
+use InvalidArgumentException;
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 use Stashd\PluginSdk\Contract\IoHost\CredentialReference;
 use Stashd\PluginSdk\Helper\Credential;
@@ -61,7 +62,7 @@ final class Helpers
 
         foreach ($credentials as $credential) {
             if (!in_array($credential, $this->credentials, true)) {
-                throw new \InvalidArgumentException('Helper credential was not supplied to this plugin call');
+                throw new InvalidArgumentException('Helper credential was not supplied to this plugin call');
             }
 
             $bindings[] = new CredentialBinding($credential->name, new CredentialReference($credential->reference));
@@ -75,7 +76,13 @@ final class Helpers
      */
     public function stage(?string $mediaType = null): Writer
     {
-        $area = $this->invocation->typedCall('stashd:plugin/io-host.open-staging-area', [], [], ['kind' => 'named', 'name' => 'staging-area'], 'io-host');
+        $area = $this->invocation->typedCall(
+            'stashd:plugin/io-host.open-staging-area',
+            [],
+            [],
+            ['kind' => 'named', 'name' => 'staging-area'],
+            'io-host',
+        );
 
         if (!$area instanceof RemoteStagingArea) {
             $this->invocation->violate('Host did not return a staging area');
