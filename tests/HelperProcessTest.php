@@ -111,7 +111,7 @@ it('returns only the transferred staged writer after the canonical staged termin
         $event = $process->nextEvent();
 
         if ($wire->tag === 'stdout-activity') {
-            expect($event)->toBeInstanceOf(HelperEventStdoutActivity::class)->and($event->value->decimal)->toBe($wire->value);
+            expect($event)->toBeInstanceOf(HelperEventStdoutActivity::class)->and($event->value)->toBe($wire->value);
         }
 
         if ($wire->tag === 'terminal') {

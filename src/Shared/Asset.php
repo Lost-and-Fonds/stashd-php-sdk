@@ -15,14 +15,14 @@ final readonly class Asset
      * @param string $id Stable ID of the saved file.
      * @param string $reference Opaque read reference, not a filesystem path.
      * @param string|null $mediaType Representation type, when supplied.
-     * @param Unsigned64 $sizeBytes Total bytes, including counts larger than a PHP integer.
+     * @param int $sizeBytes Total bytes in the saved file.
      * @param list<Metadata> $metadata Plugin-owned metadata attached to this file.
      */
     public function __construct(
         public string $id,
         public string $reference,
         public ?string $mediaType,
-        public Unsigned64 $sizeBytes,
+        public int $sizeBytes,
         public array $metadata = [],
     ) {}
 }

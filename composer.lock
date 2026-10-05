@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "07c59845b2ffd3808adef02bce37f04b",
+    "content-hash": "09c0a8e4440cbda7d3518ad62cb66a0f",
     "packages": [
         {
             "name": "stashd/plugin-api",
@@ -5929,7 +5929,8 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.5"
+        "php": "^8.5",
+        "php-64bit": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

@@ -30,18 +30,10 @@ final readonly class Acquisition
     /**
      * Create temporary output to save or hand to a helper.
      */
-    public function staging(): Helpers
-    {
-        return $this->helpers;
-    }
 
     /**
      * Return tools available while saving the item.
      */
-    public function helpers(): Helpers
-    {
-        return $this->helpers;
-    }
 
     /**
      * Return credential selectors granted for this acquisition.

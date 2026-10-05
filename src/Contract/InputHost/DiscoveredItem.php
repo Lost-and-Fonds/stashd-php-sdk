@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
-use Stashd\PluginSdk\Shared\Unsigned64;
 
 /**
  * Immutable input-host.discovered-item contract fact.
@@ -14,20 +13,63 @@ use Stashd\PluginSdk\Shared\Unsigned64;
 final readonly class DiscoveredItem
 {
     /**
+     * Canonical id value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $id;
+
+    /**
+     * Canonical reference value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $reference;
+
+    /**
+     * Canonical delegation value; retained in contract order without normalization.
+     * @var InputDelegation|null
+     */
+    public ?InputDelegation $delegation;
+
+    /**
+     * Canonical size-bytes value; retained in contract order without normalization.
+     * @var string|null
+     */
+    public ?string $sizeBytes;
+
+    /**
+     * Canonical size-estimated value; retained in contract order without normalization.
+     * @var bool
+     */
+    public bool $sizeEstimated;
+
+    /**
+     * Canonical metadata value; retained in contract order without normalization.
+     * @var list<PluginMetadata>
+     */
+    public array $metadata;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $id
      * @param string $reference
      * @param InputDelegation|null $delegation
-     * @param Unsigned64|null $sizeBytes
+     * @param string|null $sizeBytes
      * @param bool $sizeEstimated
      * @param list<PluginMetadata> $metadata
      */
     public function __construct(
-        public string $id,
-        public string $reference,
-        public ?InputDelegation $delegation,
-        public ?Unsigned64 $sizeBytes,
-        public bool $sizeEstimated,
-        public array $metadata,
-    ) {}
+        string $id,
+        string $reference,
+        ?InputDelegation $delegation,
+        ?string $sizeBytes,
+        bool $sizeEstimated,
+        array $metadata,
+    ) {
+        $this->id = $id;
+        $this->reference = $reference;
+        $this->delegation = $delegation;
+        $this->sizeBytes = $sizeBytes;
+        $this->sizeEstimated = $sizeEstimated;
+        $this->metadata = $metadata;
+    }
 }

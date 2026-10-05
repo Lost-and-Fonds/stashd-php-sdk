@@ -6,9 +6,9 @@ namespace Stashd\PluginSdk\Runtime\Codec;
 
 use Stashd\PluginSdk\CollectionExport\Collection;
 use Stashd\PluginSdk\CollectionExport\Entry;
-use Stashd\PluginSdk\CollectionExport\Exporter;
 use Stashd\PluginSdk\CollectionExport\Failure;
 use Stashd\PluginSdk\CollectionExport\Setting;
+use Stashd\PluginSdk\CollectionExporter;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
@@ -20,7 +20,7 @@ final class ExportCodec
     /**
      * Decode the frozen request, invoke the author API, and encode its result.
      */
-    public function invoke(Exporter $exporter, stdClass $params): stdClass
+    public function invoke(CollectionExporter $exporter, stdClass $params): stdClass
     {
         Envelope::exact($params, ['exporter', 'collection', 'options']);
         $identity = $this->text($params->exporter);

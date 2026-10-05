@@ -8,37 +8,36 @@ use Stashd\PluginSdk\Helper\Credential;
 use Stashd\PluginSdk\Helpers;
 
 /**
- * A named interactive destination action, separate from publishing items.
+ * Values supplied for one named destination action.
  */
 final readonly class Action
 {
     /**
-     * Keep the action and its caller-supplied settings together.
-     * @param string $name Plugin-defined destination action.
+     * Keep the action name, settings, and available tools together.
      * @param list<Setting> $settings Current destination configuration.
-     * @param list<Setting> $payload Values supplied specifically for the action.
+     * @param list<Setting> $payload Values supplied specifically for this action.
      */
     public function __construct(
         public string $name,
         public array $settings,
         public array $payload,
-        private Helpers $helpers,
+        private Helpers $tools,
     ) {}
 
     /**
-     * Return tools available while running this action.
-     */
-    public function helpers(): Helpers
-    {
-        return $this->helpers;
-    }
-
-    /**
-     * Return credential selectors granted to this action.
+     * Return credential selectors granted for this action.
      * @return list<Credential>
      */
     public function credentials(): array
     {
-        return $this->helpers->credentials();
+        return $this->tools->credentials();
+    }
+
+    /**
+     * Create temporary output or run an allowed helper.
+     */
+    public function tools(): Helpers
+    {
+        return $this->tools;
     }
 }

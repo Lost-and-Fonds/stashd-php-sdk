@@ -11,12 +11,27 @@ namespace Stashd\PluginSdk\Contract\HttpHost;
 final readonly class HttpHeader
 {
     /**
+     * Canonical name value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $name;
+
+    /**
+     * Canonical value value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $value;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $name
      * @param string $value
      */
     public function __construct(
-        public string $name,
-        public string $value,
-    ) {}
+        string $name,
+        string $value,
+    ) {
+        $this->name = $name;
+        $this->value = $value;
+    }
 }

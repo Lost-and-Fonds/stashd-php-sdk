@@ -32,6 +32,17 @@ HELPER_DOCS = {
     'helper-output-stream': 'Identifies which child output pipe delivered diagnostic bytes.',
     'helper-output-stream.stdout': 'Unstaged stdout byte channel; never emitted with staged stdout.',
     'helper-output-stream.stderr': 'Live stderr byte channel, including when stdout is staged.',
+    'input-host.discovered-item': 'An item the plugin can later retrieve using its stable ID and opaque reference.',
+    'input-host.discovered-item.id': 'Stable item identity used when the host requests acquisition.',
+    'input-host.discovered-item.reference': 'Opaque value the plugin uses to retrieve the item; preserved exactly.',
+    'input-host.discovered-item.delegation': 'Optional opaque handoff reference for another Input plugin.',
+    'input-host.discovered-item.size-bytes': 'Optional known or estimated total item size in bytes.',
+    'input-host.discovered-item.size-estimated': 'Whether the supplied item size is an estimate.',
+    'input-host.discovered-item.metadata': 'Plugin-owned metadata facets associated with this item.',
+    'input-plugin.resolved-input.size-bytes': 'Optional known or estimated total input size in bytes.',
+    'io-host.preserved-asset.size-bytes': 'Total bytes in the saved file.',
+    'io-host.staged-artifact.size-bytes': 'Total bytes written to this staged output.',
+    'io-host.helper-event.stdout-activity.value': 'Cumulative bytes accepted by the staged stdout writer.',
 }
 ENUM_CASE_DOCS = {
     ('input-host', 'deficiency-disposition', 'retryable'): 'The known gap may be filled by later preservation work.',
@@ -75,7 +86,7 @@ def main():
         if kind == 'scalar':
             name = specification['name']
             native = {'bool': 'bool', 'string': 'string', 'f32': 'float', 'f64': 'float',
-                      'u64': '\\Stashd\\PluginSdk\\Shared\\Unsigned64', 's64': 'int'}.get(name, 'int')
+                      'u64': 'string', 's64': 'int'}.get(name, 'int')
             return native, native
         if kind == 'named':
             target = named(interface, specification['name'])
@@ -210,7 +221,7 @@ def main():
             scalar = specification['name']
             if encode:
                 if scalar == 'u64':
-                    return value + '->decimal'
+                    return value
                 if scalar == 's64':
                     return '(string) ' + value
                 return value

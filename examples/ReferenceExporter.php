@@ -7,14 +7,14 @@ namespace Stashd\PluginSdk\Examples;
 use Stashd\PluginSdk\CollectionExport\Collection;
 use Stashd\PluginSdk\CollectionExport\ErrorKind;
 use Stashd\PluginSdk\CollectionExport\ExportedArtifact;
-use Stashd\PluginSdk\CollectionExport\Exporter;
 use Stashd\PluginSdk\CollectionExport\Failure;
 use Stashd\PluginSdk\CollectionExport\Setting;
+use Stashd\PluginSdk\CollectionExporter;
 
 /**
  * Small domain-neutral example exporting opaque references without assuming they are URLs.
  */
-final class ReferenceExporter implements Exporter
+final class ReferenceExporter implements CollectionExporter
 {
     /**
      * Return a length-prefixed reference list so embedded newlines remain unambiguous.

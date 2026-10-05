@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime\Codec;
 
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
-use Stashd\PluginSdk\Shared\Unsigned64;
 use stdClass;
 
 /**
@@ -82,11 +81,14 @@ final class Values
     }
 
     /**
-     * Decode the full unsigned range without loss of precision.
+     * Decode a full-range unsigned integer as canonical decimal text.
      */
-    public static function unsigned(mixed $value): Unsigned64
+    public static function unsigned(mixed $value): string
     {
-        return new Unsigned64(self::text($value));
+        $text = self::text($value);
+        Scalar::validate('u64', $text);
+
+        return $text;
     }
 
     /**

@@ -5,38 +5,41 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Shared;
 
 use NoDiscard;
+use Stashd\PluginSdk\Runtime\ProtocolViolation;
 
 /**
- * Forward byte interval; authority must be validated by the host before size-based range evaluation.
+ * Selects bytes to read from a saved file.
  */
 final readonly class ByteRange
 {
     /**
-     * Preserve requested magnitudes independently of negotiated RPC frame sizes.
+     * Set a zero-based starting offset and optional byte count.
      */
     public function __construct(
-        /**
-         * Zero-based starting offset; an offset exactly at EOF is valid.
-         */
-        public Unsigned64 $offset,
-        /**
-         * Requested extent, or null for all remaining bytes; zero requests an empty stream.
-         */
-        public ?Unsigned64 $length = null,
-    ) {}
+        public int $offset,
+        public ?int $length = null,
+    ) {
+        if ($offset < 0 || ($length !== null && $length < 0)) {
+            throw new ProtocolViolation('Byte range values cannot be negative');
+        }
+    }
 
     /**
-     * Return the clamped extent, or null for a denied offset, after authority validation.
+     * Return the requested count limited to the bytes available, or null when the offset is past EOF.
      */
     #[NoDiscard]
-    public function extent(Unsigned64 $authoritativeSize): ?Unsigned64
+    public function extent(int $authoritativeSize): ?int
     {
-        if ($this->offset->compare($authoritativeSize) > 0) {
+        if ($authoritativeSize < 0) {
+            throw new ProtocolViolation('Byte size cannot be negative');
+        }
+
+        if ($this->offset > $authoritativeSize) {
             return null;
         }
 
-        $remaining = $authoritativeSize->subtract($this->offset);
+        $remaining = $authoritativeSize - $this->offset;
 
-        return $this->length !== null && $this->length->compare($remaining) < 0 ? $this->length : $remaining;
+        return $this->length === null ? $remaining : min($this->length, $remaining);
     }
 }

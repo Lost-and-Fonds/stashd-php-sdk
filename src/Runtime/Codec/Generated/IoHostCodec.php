@@ -129,17 +129,22 @@ final class IoHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Decode a saved file and reject sizes that PHP cannot represent.
      */
     public static function decodePreservedAsset(mixed $value): PreservedAsset
     {
         $record = Values::record($value, ['id', 'reference', 'media-type', 'size-bytes', 'metadata']);
+        $size = Values::unsigned($record->{'size-bytes'});
+
+        if (strlen($size) > strlen((string) PHP_INT_MAX) || (strlen($size) === strlen((string) PHP_INT_MAX) && strcmp($size, (string) PHP_INT_MAX) > 0)) {
+            throw new ProtocolViolation('Byte size exceeds the PHP integer limit');
+        }
 
         return new PreservedAsset(
             Values::text($record->{'id'}),
             Values::text($record->{'reference'}),
             ($record->{'media-type'} === null ? null : Values::text($record->{'media-type'})),
-            Values::unsigned($record->{'size-bytes'}),
+            (string) (int) $size,
             array_map(static fn(mixed $element) => IoHostCodec::decodePluginMetadata($element), Values::list($record->{'metadata'})),
         );
     }
@@ -153,22 +158,27 @@ final class IoHostCodec
             'id' => $value->id,
             'reference' => $value->reference,
             'media-type' => ($value->mediaType === null ? null : $value->mediaType),
-            'size-bytes' => $value->sizeBytes->decimal,
+            'size-bytes' => $value->sizeBytes,
             'metadata' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->metadata),
         ];
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Decode a staged output and reject sizes that PHP cannot represent.
      */
     public static function decodeStagedArtifact(mixed $value): StagedArtifact
     {
         $record = Values::record($value, ['reference', 'media-type', 'size-bytes', 'metadata']);
+        $size = Values::unsigned($record->{'size-bytes'});
+
+        if (strlen($size) > strlen((string) PHP_INT_MAX) || (strlen($size) === strlen((string) PHP_INT_MAX) && strcmp($size, (string) PHP_INT_MAX) > 0)) {
+            throw new ProtocolViolation('Byte size exceeds the PHP integer limit');
+        }
 
         return new StagedArtifact(
             Values::text($record->{'reference'}),
             ($record->{'media-type'} === null ? null : Values::text($record->{'media-type'})),
-            Values::unsigned($record->{'size-bytes'}),
+            (string) (int) $size,
             array_map(static fn(mixed $element) => IoHostCodec::decodePluginMetadata($element), Values::list($record->{'metadata'})),
         );
     }
@@ -181,7 +191,7 @@ final class IoHostCodec
         return (object) [
             'reference' => $value->reference,
             'media-type' => ($value->mediaType === null ? null : $value->mediaType),
-            'size-bytes' => $value->sizeBytes->decimal,
+            'size-bytes' => $value->sizeBytes,
             'metadata' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->metadata),
         ];
     }

@@ -171,7 +171,7 @@ final class InputPluginCodec
             'id' => $value->id,
             'canonical-reference' => ($value->canonicalReference === null ? null : $value->canonicalReference),
             'estimated-item-count' => ($value->estimatedItemCount === null ? null : $value->estimatedItemCount),
-            'size-bytes' => ($value->sizeBytes === null ? null : $value->sizeBytes->decimal),
+            'size-bytes' => ($value->sizeBytes === null ? null : $value->sizeBytes),
             'size-estimated' => $value->sizeEstimated,
             'metadata' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->metadata),
         ];

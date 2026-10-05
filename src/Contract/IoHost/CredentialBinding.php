@@ -11,12 +11,27 @@ namespace Stashd\PluginSdk\Contract\IoHost;
 final readonly class CredentialBinding
 {
     /**
+     * Canonical name value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $name;
+
+    /**
+     * Canonical reference value; retained in contract order without normalization.
+     * @var CredentialReference
+     */
+    public CredentialReference $reference;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $name
      * @param CredentialReference $reference
      */
     public function __construct(
-        public string $name,
-        public CredentialReference $reference,
-    ) {}
+        string $name,
+        CredentialReference $reference,
+    ) {
+        $this->name = $name;
+        $this->reference = $reference;
+    }
 }

@@ -37,7 +37,7 @@ final class Process
             if ($event instanceof HelperEventOutput) {
                 yield new Output($event->value->channel === HelperOutputStream::Stdout ? OutputStream::Stdout : OutputStream::Stderr, pack('C*', ...$event->value->bytes));
             } elseif ($event instanceof HelperEventStdoutActivity) {
-                yield new StdoutActivity($event->value);
+                yield new StdoutActivity((int) $event->value);
             } elseif ($event instanceof HelperEventTerminal) {
                 $terminal = $event->value;
 

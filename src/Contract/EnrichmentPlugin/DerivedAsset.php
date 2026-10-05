@@ -13,6 +13,30 @@ use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 final readonly class DerivedAsset
 {
     /**
+     * Canonical artifact value; retained in contract order without normalization.
+     * @var StagedArtifact
+     */
+    public StagedArtifact $artifact;
+
+    /**
+     * Canonical derived-from value; retained in contract order without normalization.
+     * @var list<string>
+     */
+    public array $derivedFrom;
+
+    /**
+     * Canonical activity value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $activity;
+
+    /**
+     * Canonical activity-version value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $activityVersion;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param StagedArtifact $artifact
      * @param list<string> $derivedFrom
@@ -20,9 +44,14 @@ final readonly class DerivedAsset
      * @param string $activityVersion
      */
     public function __construct(
-        public StagedArtifact $artifact,
-        public array $derivedFrom,
-        public string $activity,
-        public string $activityVersion,
-    ) {}
+        StagedArtifact $artifact,
+        array $derivedFrom,
+        string $activity,
+        string $activityVersion,
+    ) {
+        $this->artifact = $artifact;
+        $this->derivedFrom = $derivedFrom;
+        $this->activity = $activity;
+        $this->activityVersion = $activityVersion;
+    }
 }

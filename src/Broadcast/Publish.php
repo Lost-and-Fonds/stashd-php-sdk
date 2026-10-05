@@ -111,10 +111,6 @@ final class Publish
     /**
      * Return staging and helper tools for this publication.
      */
-    public function staging(): Helpers
-    {
-        return $this->helpers;
-    }
 
     /**
      * Return staging and helper tools for this publication.

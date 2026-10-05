@@ -13,12 +13,27 @@ use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 final readonly class Publication
 {
     /**
+     * Canonical artifact value; retained in contract order without normalization.
+     * @var StagedArtifact|null
+     */
+    public ?StagedArtifact $artifact;
+
+    /**
+     * Canonical files value; retained in contract order without normalization.
+     * @var FileReportStatus
+     */
+    public FileReportStatus $files;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param StagedArtifact|null $artifact
      * @param FileReportStatus $files
      */
     public function __construct(
-        public ?StagedArtifact $artifact,
-        public FileReportStatus $files,
-    ) {}
+        ?StagedArtifact $artifact,
+        FileReportStatus $files,
+    ) {
+        $this->artifact = $artifact;
+        $this->files = $files;
+    }
 }

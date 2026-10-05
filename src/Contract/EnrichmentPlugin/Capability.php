@@ -11,14 +11,36 @@ namespace Stashd\PluginSdk\Contract\EnrichmentPlugin;
 final readonly class Capability
 {
     /**
+     * Canonical id value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $id;
+
+    /**
+     * Canonical revision value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $revision;
+
+    /**
+     * Canonical options value; retained in contract order without normalization.
+     * @var list<ConfigurationOption>
+     */
+    public array $options;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $id
      * @param string $revision
      * @param list<ConfigurationOption> $options
      */
     public function __construct(
-        public string $id,
-        public string $revision,
-        public array $options,
-    ) {}
+        string $id,
+        string $revision,
+        array $options,
+    ) {
+        $this->id = $id;
+        $this->revision = $revision;
+        $this->options = $options;
+    }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\BroadcastPlugin;
-use Stashd\PluginSdk\CollectionExport\Exporter as LegacyCollectionExporter;
 use Stashd\PluginSdk\CollectionExporter;
 use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
@@ -33,10 +32,7 @@ final class ExportRunner
     /**
      * Serve calls for the one plugin component represented by the package.
      */
-    /**
-     * Serve calls for the one plugin component represented by the package.
-     */
-    public function run(CollectionExporter|LegacyCollectionExporter|BroadcastPlugin|InputPlugin|EnrichmentPlugin $plugin, int $receiveMaximum): void
+    public function run(CollectionExporter|BroadcastPlugin|InputPlugin|EnrichmentPlugin $plugin, int $receiveMaximum): void
     {
         $invocation = null;
         $active = null;
@@ -76,7 +72,7 @@ final class ExportRunner
                 $invocation = $identity;
                 $this->trace->emit(TraceLevel::Basic, 'invocation.start', ['invocation' => $identity, 'id' => $id]);
 
-                if (($plugin instanceof CollectionExporter || $plugin instanceof LegacyCollectionExporter) && $method === 'stashd:plugin/collection-export-plugin.export-collection') {
+                if ($plugin instanceof CollectionExporter && $method === 'stashd:plugin/collection-export-plugin.export-collection') {
                     $result = $codec->invoke($plugin, $params);
                 } elseif ($plugin instanceof InputPlugin && str_starts_with($method, 'stashd:plugin/input-plugin.')) {
                     $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/input-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);

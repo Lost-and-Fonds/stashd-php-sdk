@@ -14,7 +14,6 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 use Stashd\PluginSdk\Runtime\Resource\RemoteHelperProcess;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagingArea;
-use Stashd\PluginSdk\Shared\Unsigned64;
 use stdClass;
 
 /**
@@ -180,7 +179,7 @@ final class ResourceValueCodec
             return match ($schema['name']) {
                 'string' => Values::text($value),
                 'bool' => Values::boolean($value),
-                'u64' => $value instanceof Unsigned64 ? $value->decimal : Values::unsigned($value)->decimal,
+                'u64' => Values::unsigned($value),
                 's64' => (string) Values::signed($value),
                 'f32', 'f64' => Values::floating($schema['name'], $value),
                 default => Values::integer(self::name($schema['name']), $value),

@@ -84,7 +84,7 @@ final class InputHostCodec
             'id' => $value->id,
             'reference' => $value->reference,
             'delegation' => ($value->delegation === null ? null : InputHostCodec::encodeInputDelegation($value->delegation)),
-            'size-bytes' => ($value->sizeBytes === null ? null : $value->sizeBytes->decimal),
+            'size-bytes' => ($value->sizeBytes === null ? null : $value->sizeBytes),
             'size-estimated' => $value->sizeEstimated,
             'metadata' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->metadata),
         ];

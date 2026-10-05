@@ -25,7 +25,7 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 final class RemoteHelperProcess implements HelperProcess, OwnedResource
 {
     /**
-     * Last accepted cumulative stdout activity count, represented without u64 precision loss.
+     * Last accepted cumulative stdout activity count.
      */
     private string $activity = '0';
 
@@ -110,7 +110,7 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
                 'resource-id' => $this->id, 'state' => $output->channel->value, 'bytes' => count($output->bytes),
             ]);
         } elseif ($event instanceof HelperEventStdoutActivity) {
-            $count = $event->value->decimal;
+            $count = $event->value;
 
             if (!$this->staged || self::lessThan($count, $this->activity)) {
                 $this->invocation->violate('Helper stdout activity is invalid for this output mode');

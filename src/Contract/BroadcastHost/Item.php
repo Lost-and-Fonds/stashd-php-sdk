@@ -14,14 +14,36 @@ use Stashd\PluginSdk\Contract\IoHost\PreservedAsset;
 final readonly class Item
 {
     /**
+     * Canonical id value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $id;
+
+    /**
+     * Canonical assets value; retained in contract order without normalization.
+     * @var list<PreservedAsset>
+     */
+    public array $assets;
+
+    /**
+     * Canonical metadata value; retained in contract order without normalization.
+     * @var list<PluginMetadata>
+     */
+    public array $metadata;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $id
      * @param list<PreservedAsset> $assets
      * @param list<PluginMetadata> $metadata
      */
     public function __construct(
-        public string $id,
-        public array $assets,
-        public array $metadata,
-    ) {}
+        string $id,
+        array $assets,
+        array $metadata,
+    ) {
+        $this->id = $id;
+        $this->assets = $assets;
+        $this->metadata = $metadata;
+    }
 }

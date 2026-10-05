@@ -50,10 +50,6 @@ final readonly class Request
     /**
      * Create temporary output or run an allowed helper.
      */
-    public function staging(): Helpers
-    {
-        return $this->helpers;
-    }
 
     /**
      * Return helper and staging tools.
@@ -75,16 +71,19 @@ final readonly class Request
     /**
      * Open one Asset granted with this item, optionally reading a byte range.
      */
-    public function openAsset(Asset $asset, int|string $offset = 0, int|string|null $length = null): Stream
+    /**
+     * Open a saved file at an optional byte offset and length.
+     */
+    public function openAsset(Asset $asset, int $offset = 0, ?int $length = null): Stream
     {
-        if ((is_int($offset) && $offset < 0) || (is_int($length) && $length < 0)) {
+        if ($offset < 0 || ($length !== null && $length < 0)) {
             throw new InvalidArgumentException('Asset byte range cannot be negative');
         }
 
         $result = $this->invocation->call('stashd:plugin/enrichment-host.open-asset', (object) [
             'reference' => $asset->reference,
-            'offset' => is_int($offset) ? (string) $offset : $offset,
-            'length' => $length === null ? null : (is_int($length) ? (string) $length : $length),
+            'offset' => (string) $offset,
+            'length' => $length === null ? null : (string) $length,
         ]);
 
         if (!$result instanceof stdClass) {

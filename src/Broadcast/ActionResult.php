@@ -5,14 +5,23 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Broadcast;
 
 /**
- * Choices and changed settings returned by an interactive destination action.
+ * The choices and setting changes returned by a Broadcast operation.
  */
 final readonly class ActionResult
 {
     /**
-     * Provide choices and optional settings selected by this action.
-     * @param list<Choice> $choices Options shown to the caller.
-     * @param list<Setting> $values Destination changes returned to the caller.
+     * Create the operation result.
+     * @param list<Choice> $choices
+     * @param list<Setting> $values
      */
-    public function __construct(public array $choices = [], public array $values = []) {}
+    public function __construct(
+        /**
+         * @var list<Choice> Choices to show the caller.
+         */
+        public array $choices = [],
+        /**
+         * @var list<Setting> Destination setting values to update.
+         */
+        public array $values = [],
+    ) {}
 }

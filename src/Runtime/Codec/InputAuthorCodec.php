@@ -75,7 +75,7 @@ final class InputAuthorCodec
     {
         $item = InputHostCodec::decodeDiscoveredItem($wire);
 
-        return new DiscoveredItem($item->id, $item->reference, $item->delegation?->reference, $item->sizeBytes, $item->sizeEstimated, array_map(AuthorValues::metadata(...), $item->metadata));
+        return new DiscoveredItem($item->id, $item->reference, $item->delegation?->reference, $item->sizeBytes === null ? null : AuthorValues::authorSize($item->sizeBytes), $item->sizeEstimated, array_map(AuthorValues::metadata(...), $item->metadata));
     }
 
     /**

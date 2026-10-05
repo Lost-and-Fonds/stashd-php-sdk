@@ -11,12 +11,27 @@ namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
 final readonly class Choice
 {
     /**
+     * Canonical value value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $value;
+
+    /**
+     * Canonical label value; retained in contract order without normalization.
+     * @var string
+     */
+    public string $label;
+
+    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $value
      * @param string $label
      */
     public function __construct(
-        public string $value,
-        public string $label,
-    ) {}
+        string $value,
+        string $label,
+    ) {
+        $this->value = $value;
+        $this->label = $label;
+    }
 }

@@ -42,7 +42,7 @@ final class ProgressBroadcast implements BroadcastPlugin
      */
     public function action(Action $request): ActionResult
     {
-        $helpers = $request->helpers();
+        $helpers = $request->tools();
         $writer = $helpers->stage('application/octet-stream');
         $process = $helpers->start($request->name, ['--progress'], output: $writer);
         $progress = '';
@@ -60,7 +60,7 @@ final class ProgressBroadcast implements BroadcastPlugin
                     }
                 }
             } elseif ($event instanceof StdoutActivity) {
-                $this->activity[] = $event->bytes->decimal;
+                $this->activity[] = (string) $event->bytes;
             } elseif ($event instanceof Exited) {
                 if ($event->code !== 0 || $event->output === null) {
                     throw new RuntimeException('Helper did not finish its output');
