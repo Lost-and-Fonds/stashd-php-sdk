@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Helper;
 
+use Generator;
 use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 
 /**
@@ -12,17 +13,9 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 final class Stream
 {
     /**
-     * The host-managed input stream.
-     */
-    private readonly RemoteByteStream $stream;
-
-    /**
      * Create helper input from a host-provided stream.
      */
-    public function __construct(RemoteByteStream $stream)
-    {
-        $this->stream = $stream;
-    }
+    public function __construct(private readonly RemoteByteStream $stream) {}
 
     /**
      * Return the underlying stream for one-time transfer to a helper.
@@ -30,6 +23,21 @@ final class Stream
     public function transfer(): RemoteByteStream
     {
         return $this->stream;
+    }
+
+    /**
+     * Read a stream chunk at a time and close it when iteration finishes.
+     * @return Generator<int, string>
+     */
+    public function chunks(): Generator
+    {
+        try {
+            while (($chunk = $this->stream->read()) !== null) {
+                yield pack('C*', ...$chunk);
+            }
+        } finally {
+            $this->close();
+        }
     }
 
     /**

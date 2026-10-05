@@ -10,31 +10,14 @@ namespace Stashd\PluginSdk\Broadcast;
 final readonly class Operation
 {
     /**
-     * Plugin-defined operation name.
-     */
-    public string $name;
-
-    /**
-     * Current destination settings.
-     * @var list<Setting>
-     */
-    public array $settings;
-
-    /**
-     * Values supplied specifically for this operation.
-     * @var list<Setting>
-     */
-    public array $payload;
-
-    /**
      * Create an operation request.
-     * @param list<Setting> $settings
-     * @param list<Setting> $payload
+     * @param string $name The plugin-defined action to run.
+     * @param list<Setting> $settings Current destination configuration.
+     * @param list<Setting> $payload Values supplied specifically for this action.
      */
-    public function __construct(string $name, array $settings, array $payload)
-    {
-        $this->name = $name;
-        $this->settings = $settings;
-        $this->payload = $payload;
-    }
+    public function __construct(
+        public string $name,
+        public array $settings,
+        public array $payload,
+    ) {}
 }

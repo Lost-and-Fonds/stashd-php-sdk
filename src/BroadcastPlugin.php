@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk;
 
-use Stashd\PluginSdk\Broadcast\Operation;
-use Stashd\PluginSdk\Broadcast\OperationResult;
+use Stashd\PluginSdk\Broadcast\Action;
+use Stashd\PluginSdk\Broadcast\ActionResult;
+use Stashd\PluginSdk\Broadcast\Publication;
+use Stashd\PluginSdk\Broadcast\Publish;
 
 /**
- * Implement Broadcast operations exposed by this plugin.
+ * Publish selected saved items or answer a named destination action.
  */
 interface BroadcastPlugin
 {
     /**
-     * Run one named Broadcast operation. Helpers contains only the capabilities available to this call.
+     * Publish selected items in one complete call.
      */
-    public function operation(Operation $request, Helpers $helpers): OperationResult;
+    public function publish(Publish $request): Publication;
+
+    /**
+     * Run a plugin-defined interactive action without publishing items.
+     */
+    public function action(Action $request): ActionResult;
 }

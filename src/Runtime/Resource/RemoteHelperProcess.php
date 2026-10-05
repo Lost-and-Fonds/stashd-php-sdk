@@ -25,21 +25,6 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 final class RemoteHelperProcess implements HelperProcess, OwnedResource
 {
     /**
-     * Canonical process resource identity.
-     */
-    private readonly string $id;
-
-    /**
-     * Invocation responsible for process resource release and cleanup.
-     */
-    private readonly Invocation $invocation;
-
-    /**
-     * True only when stdout was transferred into a staged writer.
-     */
-    private readonly bool $staged;
-
-    /**
      * Last accepted cumulative stdout activity count, represented without u64 precision loss.
      */
     private string $activity = '0';
@@ -53,21 +38,17 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
      * True after the first canonical post-terminal EOF result.
      */
     private bool $eof = false;
-
-    /**
-     * Writer transferred into this process, if stdout was staged.
-     */
-    private readonly ?string $writerId;
+    private readonly bool $staged;
 
     /**
      * Bind a host-owned process already installed in this invocation's ledger.
      */
-    public function __construct(Invocation $invocation, string $id, ?string $writerId)
-    {
-        $this->invocation = $invocation;
-        $this->id = $id;
+    public function __construct(
+        private readonly Invocation $invocation,
+        private readonly string $id,
+        private readonly ?string $writerId,
+    ) {
         $this->staged = $writerId !== null;
-        $this->writerId = $writerId;
         $invocation->resources->requireOwned($invocation->id, $id, 'stashd:plugin/io-host.helper-process');
         $invocation->trace(TraceLevel::Ludicrous, 'helper.process', ['resource-id' => $id,
             'resource-type' => 'stashd:plugin/io-host.helper-process']);

@@ -10,21 +10,9 @@ namespace Stashd\PluginSdk\Broadcast;
 final readonly class Setting
 {
     /**
-     * Plugin-defined setting name.
+     * Create a setting from its key and typed value.
+     * @param string $key The plugin-defined setting name.
+     * @param string|bool|int $value The selected configuration value.
      */
-    public string $key;
-
-    /**
-     * Setting value.
-     */
-    public string|bool|int $value;
-
-    /**
-     * Create a setting.
-     */
-    public function __construct(string $key, string|bool|int $value)
-    {
-        $this->key = $key;
-        $this->value = $value;
-    }
+    public function __construct(public string $key, public string|bool|int $value) {}
 }

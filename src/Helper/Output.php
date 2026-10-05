@@ -10,21 +10,9 @@ namespace Stashd\PluginSdk\Helper;
 final readonly class Output
 {
     /**
-     * Which output stream produced the bytes.
-     */
-    public OutputStream $stream;
-
-    /**
-     * Raw bytes exactly as written by the helper. They may contain carriage returns or non-UTF-8 data.
-     */
-    public string $bytes;
-
-    /**
      * Create one helper output event. A chunk is not necessarily a complete line.
+     * @param OutputStream $stream Which output stream produced the bytes.
+     * @param string $bytes Raw bytes exactly as written by the helper, including carriage returns or non-UTF-8 data.
      */
-    public function __construct(OutputStream $stream, string $bytes)
-    {
-        $this->stream = $stream;
-        $this->bytes = $bytes;
-    }
+    public function __construct(public OutputStream $stream, public string $bytes) {}
 }

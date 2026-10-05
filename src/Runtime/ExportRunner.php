@@ -4,57 +4,39 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime;
 
-use Stashd\PluginSdk\Broadcast\Choice;
-use Stashd\PluginSdk\Broadcast\Operation;
-use Stashd\PluginSdk\Broadcast\OperationResult;
-use Stashd\PluginSdk\Broadcast\Setting;
 use Stashd\PluginSdk\BroadcastPlugin;
-use Stashd\PluginSdk\Contract\BroadcastPlugin\OptionValueBoolean;
-use Stashd\PluginSdk\Contract\BroadcastPlugin\OptionValueNumber;
-use Stashd\PluginSdk\Contract\BroadcastPlugin\OptionValueText;
-use Stashd\PluginSdk\Contract\BroadcastPlugin\Setting as ContractSetting;
-use Stashd\PluginSdk\CollectionExport\Exporter;
-use Stashd\PluginSdk\Helper\Credential;
-use Stashd\PluginSdk\Helpers;
+use Stashd\PluginSdk\CollectionExport\Exporter as LegacyCollectionExporter;
+use Stashd\PluginSdk\CollectionExporter;
 use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
+use Stashd\PluginSdk\EnrichmentPlugin;
+use Stashd\PluginSdk\InputPlugin;
 use Stashd\PluginSdk\Runtime\Codec\Envelope;
 use Stashd\PluginSdk\Runtime\Codec\ExportCodec;
 use Stashd\PluginSdk\Runtime\Codec\FrameChannel;
-use Stashd\PluginSdk\Runtime\Codec\Generated\BroadcastPluginCodec;
-use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
-use Stashd\PluginSdk\Runtime\Codec\Values;
 use stdClass;
 use Throwable;
 
 /**
- * Sequential Collection Export process runtime with plugin-first hello and fail-closed dispatch.
+ * Run one declared plugin component over the negotiated Stashd RPC channel.
  */
 final class ExportRunner
 {
     /**
-     * Frame channel exclusively bound to protocol streams.
+     * Bind transport and diagnostics for process use or an in-memory host test.
      */
-    private readonly FrameChannel $channel;
+    public function __construct(
+        private readonly FrameChannel $channel,
+        private readonly Trace $trace,
+    ) {}
 
     /**
-     * Safe structured diagnostics, separate from protocol output.
+     * Serve calls for the one plugin component represented by the package.
      */
-    private readonly Trace $trace;
-
     /**
-     * Bind transport and diagnostics explicitly for both process use and host-simulator tests.
+     * Serve calls for the one plugin component represented by the package.
      */
-    public function __construct(FrameChannel $channel, Trace $trace)
-    {
-        $this->channel = $channel;
-        $this->trace = $trace;
-    }
-
-    /**
-     * Run sequential invocations until clean EOF; any contract failure permanently invalidates the channel.
-     */
-    public function run(Exporter|BroadcastPlugin $exporter, int $receiveMaximum): void
+    public function run(CollectionExporter|LegacyCollectionExporter|BroadcastPlugin|InputPlugin|EnrichmentPlugin $plugin, int $receiveMaximum): void
     {
         $invocation = null;
         $active = null;
@@ -80,8 +62,9 @@ final class ExportRunner
                 $identity = $frame->invocation;
                 $id = $frame->id;
                 $params = $frame->params;
+                $method = $frame->method;
 
-                if (!is_string($identity) || !is_string($id) || !$params instanceof stdClass) {
+                if (!is_string($identity) || !is_string($id) || !is_string($method) || !$params instanceof stdClass) {
                     throw new ProtocolViolation('Invalid lifecycle request fields');
                 }
 
@@ -93,21 +76,17 @@ final class ExportRunner
                 $invocation = $identity;
                 $this->trace->emit(TraceLevel::Basic, 'invocation.start', ['invocation' => $identity, 'id' => $id]);
 
-                if ($exporter instanceof Exporter && $frame->method === 'stashd:plugin/collection-export-plugin.export-collection') {
-                    $result = $codec->invoke($exporter, $params);
-                } elseif ($exporter instanceof BroadcastPlugin && $frame->method === 'stashd:plugin/broadcast-plugin.operation') {
-                    Values::record($params, ['request', 'credentials']);
-                    $request = BroadcastPluginCodec::decodeOperationRequest($params->request);
-                    $credentials = [];
-
-                    foreach (Values::list($params->credentials) as $binding) {
-                        $binding = IoHostCodec::decodeCredentialBinding($binding);
-                        $credentials[] = new Credential($binding->name, $binding->reference->id);
-                    }
-
-                    $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host']);
-                    $response = $exporter->operation(new Operation($request->name, self::settings($request->settings), self::settings($request->payload)), new Helpers($active, $credentials));
-                    $result = self::operationResult($response);
+                if (($plugin instanceof CollectionExporter || $plugin instanceof LegacyCollectionExporter) && $method === 'stashd:plugin/collection-export-plugin.export-collection') {
+                    $result = $codec->invoke($plugin, $params);
+                } elseif ($plugin instanceof InputPlugin && str_starts_with($method, 'stashd:plugin/input-plugin.')) {
+                    $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/input-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
+                    $result = (new InputDispatcher())->invoke($plugin, $method, $params, $active);
+                } elseif ($plugin instanceof BroadcastPlugin && str_starts_with($method, 'stashd:plugin/broadcast-plugin.')) {
+                    $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/broadcast-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
+                    $result = (new BroadcastDispatcher())->invoke($plugin, $method, $params, $active);
+                } elseif ($plugin instanceof EnrichmentPlugin && str_starts_with($method, 'stashd:plugin/enrichment-plugin.')) {
+                    $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/enrichment-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
+                    $result = (new EnrichmentDispatcher())->invoke($plugin, $method, $params, $active);
                 } else {
                     throw new ProtocolViolation('Unsupported lifecycle method for component');
                 }
@@ -129,45 +108,5 @@ final class ExportRunner
             $active?->cleanup();
             $this->trace->emit(TraceLevel::Basic, 'cleanup', ['invocation' => $invocation]);
         }
-    }
-
-    /**
-     * Map ordered Broadcast settings to public typed values without changing their keys.
-     * @param list<ContractSetting> $values
-     * @return list<Setting>
-     */
-    private static function settings(array $values): array
-    {
-        $mapped = [];
-
-        foreach ($values as $setting) {
-            $mapped[] = new Setting($setting->key, match (true) {
-                $setting->value instanceof OptionValueBoolean, $setting->value instanceof OptionValueNumber, $setting->value instanceof OptionValueText => $setting->value->value,
-                default => throw new ProtocolViolation('Unknown Broadcast setting value'),
-            });
-        }
-
-        return $mapped;
-    }
-
-    /**
-     * Encode the plugin's actual choices and setting updates as the declared operation result.
-     */
-    private static function operationResult(OperationResult $response): stdClass
-    {
-        $values = array_map(static function (Setting $setting): ContractSetting {
-            $value = match (true) {
-                is_bool($setting->value) => new OptionValueBoolean($setting->value),
-                is_int($setting->value) => new OptionValueNumber($setting->value),
-                default => new OptionValueText($setting->value),
-            };
-
-            return new ContractSetting($setting->key, $value);
-        }, $response->values);
-
-        return (object) ['ok' => (object) [
-            'choices' => array_map(static fn(Choice $choice): stdClass => (object) ['value' => $choice->value, 'label' => $choice->label], $response->choices),
-            'values' => array_map(BroadcastPluginCodec::encodeSetting(...), $values),
-        ]];
     }
 }

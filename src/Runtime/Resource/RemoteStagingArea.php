@@ -16,22 +16,12 @@ use stdClass;
 final class RemoteStagingArea implements OwnedResource
 {
     /**
-     * Active invocation that owns this staging area.
-     */
-    private readonly Invocation $invocation;
-
-    /**
-     * Opaque identity of the host-created staging area.
-     */
-    private readonly string $id;
-
-    /**
      * Bind a host-created staging area to its active invocation.
      */
-    public function __construct(Invocation $invocation, string $id)
-    {
-        $this->invocation = $invocation;
-        $this->id = $id;
+    public function __construct(
+        private readonly Invocation $invocation,
+        private readonly string $id,
+    ) {
         $invocation->resources->requireOwned($invocation->id, $id, 'stashd:plugin/io-host.staging-area');
     }
 

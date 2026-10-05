@@ -7,6 +7,4 @@ namespace Stashd\PluginSdk\Helper;
 /**
  * The helper was cancelled. Any staged stdout writer is no longer usable.
  */
-final readonly class Cancelled
-{
-}
+final readonly class Cancelled {}

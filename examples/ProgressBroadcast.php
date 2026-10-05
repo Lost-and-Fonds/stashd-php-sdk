@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Examples;
 
-use Stashd\PluginSdk\Broadcast\Operation;
-use Stashd\PluginSdk\Broadcast\OperationResult;
+use RuntimeException;
+use Stashd\PluginSdk\Broadcast\Action;
+use Stashd\PluginSdk\Broadcast\ActionResult;
+use Stashd\PluginSdk\Broadcast\Publication;
+use Stashd\PluginSdk\Broadcast\Publish;
 use Stashd\PluginSdk\BroadcastPlugin;
 use Stashd\PluginSdk\Helper\Exited;
 use Stashd\PluginSdk\Helper\Output;
 use Stashd\PluginSdk\Helper\OutputStream;
 use Stashd\PluginSdk\Helper\StdoutActivity;
-use Stashd\PluginSdk\Helpers;
 
 /**
  * Example Broadcast plugin that reads live progress from a helper.
@@ -38,8 +40,9 @@ final class ProgressBroadcast implements BroadcastPlugin
     /**
      * Start a helper, parse its carriage-return progress, then read its staged output.
      */
-    public function operation(Operation $request, Helpers $helpers): OperationResult
+    public function action(Action $request): ActionResult
     {
+        $helpers = $request->helpers();
         $writer = $helpers->stage('application/octet-stream');
         $process = $helpers->start($request->name, ['--progress'], output: $writer);
         $progress = '';
@@ -60,19 +63,27 @@ final class ProgressBroadcast implements BroadcastPlugin
                 $this->activity[] = $event->bytes->decimal;
             } elseif ($event instanceof Exited) {
                 if ($event->code !== 0 || $event->output === null) {
-                    throw new \RuntimeException('Helper did not finish its output');
+                    throw new RuntimeException('Helper did not finish its output');
                 }
 
                 foreach ($event->output->finish()->chunks() as $chunk) {
                     $this->saved .= $chunk;
                 }
             } else {
-                throw new \RuntimeException('Helper did not exit normally');
+                throw new RuntimeException('Helper did not exit normally');
             }
         }
 
         $process->close();
 
-        return new OperationResult();
+        return new ActionResult();
+    }
+
+    /**
+     * Publish selected items when this component is used as a destination.
+     */
+    public function publish(Publish $request): Publication
+    {
+        return new Publication();
     }
 }

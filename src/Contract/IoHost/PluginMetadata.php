@@ -11,27 +11,12 @@ namespace Stashd\PluginSdk\Contract\IoHost;
 final readonly class PluginMetadata
 {
     /**
-     * Canonical schema value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $schema;
-
-    /**
-     * Canonical json value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $json;
-
-    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $schema
      * @param string $json
      */
     public function __construct(
-        string $schema,
-        string $json,
-    ) {
-        $this->schema = $schema;
-        $this->json = $json;
-    }
+        public string $schema,
+        public string $json,
+    ) {}
 }

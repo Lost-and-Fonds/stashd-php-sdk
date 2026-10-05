@@ -13,36 +13,6 @@ use Stashd\PluginSdk\Shared\Unsigned64;
 final readonly class PreservedAsset
 {
     /**
-     * Canonical id value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $id;
-
-    /**
-     * Canonical reference value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $reference;
-
-    /**
-     * Canonical media-type value; retained in contract order without normalization.
-     * @var string|null
-     */
-    public ?string $mediaType;
-
-    /**
-     * Canonical size-bytes value; retained in contract order without normalization.
-     * @var Unsigned64
-     */
-    public Unsigned64 $sizeBytes;
-
-    /**
-     * Canonical metadata value; retained in contract order without normalization.
-     * @var list<PluginMetadata>
-     */
-    public array $metadata;
-
-    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $id
      * @param string $reference
@@ -51,16 +21,10 @@ final readonly class PreservedAsset
      * @param list<PluginMetadata> $metadata
      */
     public function __construct(
-        string $id,
-        string $reference,
-        ?string $mediaType,
-        Unsigned64 $sizeBytes,
-        array $metadata,
-    ) {
-        $this->id = $id;
-        $this->reference = $reference;
-        $this->mediaType = $mediaType;
-        $this->sizeBytes = $sizeBytes;
-        $this->metadata = $metadata;
-    }
+        public string $id,
+        public string $reference,
+        public ?string $mediaType,
+        public Unsigned64 $sizeBytes,
+        public array $metadata,
+    ) {}
 }

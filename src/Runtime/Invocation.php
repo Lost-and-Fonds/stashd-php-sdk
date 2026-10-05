@@ -24,21 +24,6 @@ final class Invocation
     public readonly ResourceTable $resources;
 
     /**
-     * Host-selected opaque correlation scope.
-     */
-    public readonly string $id;
-
-    /**
-     * Shared process channel, permanently invalidated after protocol failure.
-     */
-    private readonly FrameChannel $channel;
-
-    /**
-     * Safe runtime event sink, never carrying capability payloads.
-     */
-    private readonly Trace $trace;
-
-    /**
      * Correlation tokens already used by either side within this invocation.
      * @var array<string, true>
      */
@@ -55,21 +40,16 @@ final class Invocation
     private bool $active = true;
 
     /**
-     * Interfaces granted by this lifecycle, not merely by its enclosing world.
-     * @var list<string>
-     */
-    private readonly array $imports;
-
-    /**
      * Establish the invocation before dispatching author code.
      * @param list<string> $imports
      */
-    public function __construct(string $id, string $lifecycleId, FrameChannel $channel, Trace $trace, array $imports)
-    {
-        $this->id = $id;
-        $this->channel = $channel;
-        $this->trace = $trace;
-        $this->imports = $imports;
+    public function __construct(
+        public readonly string $id,
+        string $lifecycleId,
+        private readonly FrameChannel $channel,
+        private readonly Trace $trace,
+        private readonly array $imports,
+    ) {
         $this->used = [$lifecycleId => true];
         $this->resources = new ResourceTable($id);
     }
@@ -166,6 +146,16 @@ final class Invocation
             return ResourceValueCodec::decode($result, $resultType, $interface, $this, $writerId);
         } catch (ProtocolViolation $error) {
             $this->violate($error->getMessage());
+        }
+    }
+
+    /**
+     * Reject use of a completed plugin call before returning saved resources.
+     */
+    public function requireActive(): void
+    {
+        if (!$this->active) {
+            throw new ProtocolViolation('Resource belongs to a completed plugin call');
         }
     }
 

@@ -12,25 +12,21 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 final readonly class Progress
 {
     /**
-     * Plugin-defined presentation text, never parsed as a lifecycle state.
-     */
-    public string $stage;
-
-    /**
-     * Finite fraction in the inclusive unit interval, or null for stage-only reporting.
-     */
-    public ?float $fraction;
-
-    /**
      * Reject invalid fractions rather than clamping or reinterpreting percentages.
      */
-    public function __construct(string $stage, ?float $fraction = null)
-    {
+    public function __construct(
+        /**
+         * Plugin-defined presentation text, never parsed as a lifecycle state.
+         */
+        public string $stage,
+        /**
+         * Finite fraction in the inclusive unit interval, or null for stage-only reporting.
+         */
+        public ?float $fraction = null,
+    ) {
         if ($fraction !== null && (!is_finite($fraction) || $fraction < 0 || $fraction > 1)) {
             throw new ProtocolViolation('Progress fraction must be finite and within [0, 1]');
         }
 
-        $this->stage = $stage;
-        $this->fraction = $fraction;
     }
 }

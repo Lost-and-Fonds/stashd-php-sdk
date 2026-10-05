@@ -10,21 +10,10 @@ namespace Stashd\PluginSdk\CollectionExport;
 final readonly class Entry
 {
     /**
-     * Opaque plugin-interpreted entry reference, preserved verbatim.
-     */
-    public string $reference;
-
-    /**
-     * Optional presentation title; null is distinct from an empty title.
-     */
-    public ?string $title;
-
-    /**
      * Create an entry without normalizing its reference or presentation text.
+     *
+     * @param string $reference The opaque reference the selected exporter should read.
+     * @param string|null $title The optional label for this entry in the exported file.
      */
-    public function __construct(string $reference, ?string $title = null)
-    {
-        $this->reference = $reference;
-        $this->title = $title;
-    }
+    public function __construct(public string $reference, public ?string $title = null) {}
 }

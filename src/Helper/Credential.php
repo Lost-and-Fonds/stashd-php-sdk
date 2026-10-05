@@ -10,21 +10,9 @@ namespace Stashd\PluginSdk\Helper;
 final readonly class Credential
 {
     /**
-     * Environment variable name the helper will receive.
-     */
-    public string $name;
-
-    /**
-     * Opaque host reference used to select the credential. It is not the secret.
-     */
-    public string $reference;
-
-    /**
      * Create a helper credential selector.
+     * @param string $name Environment variable name the helper receives.
+     * @param string $reference Opaque selector reference, not the secret itself.
      */
-    public function __construct(string $name, string $reference)
-    {
-        $this->name = $name;
-        $this->reference = $reference;
-    }
+    public function __construct(public string $name, public string $reference) {}
 }

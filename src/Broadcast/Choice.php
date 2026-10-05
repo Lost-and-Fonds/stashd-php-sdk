@@ -10,21 +10,9 @@ namespace Stashd\PluginSdk\Broadcast;
 final readonly class Choice
 {
     /**
-     * Value returned when the caller chooses this option.
-     */
-    public string $value;
-
-    /**
-     * Label shown to the caller.
-     */
-    public string $label;
-
-    /**
      * Create one selectable option.
+     * @param string $value The value sent back when selected.
+     * @param string $label The option text shown in the caller's interface.
      */
-    public function __construct(string $value, string $label)
-    {
-        $this->value = $value;
-        $this->label = $label;
-    }
+    public function __construct(public string $value, public string $label) {}
 }

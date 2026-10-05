@@ -13,12 +13,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Focused Collection Export mapping, keeping JSON entirely outside the author interface.
+ * Maps one bounded Collection Export request without exposing wire values to plugins.
  */
 final class ExportCodec
 {
     /**
-     * Decode exact WIT arguments, invoke a typed exporter and encode its canonical result.
+     * Decode the frozen request, invoke the author API, and encode its result.
      */
     public function invoke(Exporter $exporter, stdClass $params): stdClass
     {
@@ -32,7 +32,7 @@ final class ExportCodec
             $entries[] = new Entry($this->text($entry->reference), $this->optionalText($entry->title));
         }
 
-        $settings = [];
+        $options = [];
 
         foreach ($this->items($params->options) as $raw) {
             $setting = $this->record($raw, ['key', 'value']);
@@ -52,10 +52,10 @@ final class ExportCodec
                 throw new ProtocolViolation('Invalid exporter option payload');
             }
 
-            $settings[] = new Setting($this->text($setting->key), $value);
+            $options[] = new Setting($this->text($setting->key), $value);
         }
 
-        $result = $exporter->export($identity, new Collection($this->optionalText($collection->title), ...$entries), ...$settings);
+        $result = $exporter->export($identity, new Collection($this->optionalText($collection->title), ...$entries), ...$options);
 
         if ($result instanceof Failure) {
             return (object) ['error' => (object) ['tag' => $result->kind->value, 'value' => (object) [
@@ -89,7 +89,7 @@ final class ExportCodec
     }
 
     /**
-     * Validate ordered list structure, preserving duplicates for plugin-owned interpretation.
+     * Validate ordered list structure, preserving caller order and duplicates.
      * @return list<mixed>
      */
     private function items(mixed $value): array
@@ -102,7 +102,7 @@ final class ExportCodec
     }
 
     /**
-     * Validate a Unicode scalar string without normalization.
+     * Validate a Unicode string without normalization.
      */
     private function text(mixed $value): string
     {
@@ -114,7 +114,7 @@ final class ExportCodec
     }
 
     /**
-     * Preserve absence independently of empty strings.
+     * Keep absence distinct from an empty string.
      */
     private function optionalText(mixed $value): ?string
     {

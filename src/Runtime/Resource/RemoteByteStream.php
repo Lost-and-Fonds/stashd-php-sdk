@@ -18,16 +18,6 @@ use stdClass;
 final class RemoteByteStream implements ByteStream, OwnedResource
 {
     /**
-     * Invocation owning this resource; retaining the proxy cannot retain authority.
-     */
-    private readonly Invocation $invocation;
-
-    /**
-     * Opaque host resource identity, never exposed as the author stream value.
-     */
-    private readonly string $id;
-
-    /**
      * Successful EOF is terminal even if the remote producer later misbehaves.
      */
     private bool $eof = false;
@@ -35,10 +25,10 @@ final class RemoteByteStream implements ByteStream, OwnedResource
     /**
      * Accept ownership of a fully validated host-created stream.
      */
-    public function __construct(Invocation $invocation, string $id)
-    {
-        $this->invocation = $invocation;
-        $this->id = $id;
+    public function __construct(
+        private readonly Invocation $invocation,
+        private readonly string $id,
+    ) {
         $invocation->resources->requireOwned($invocation->id, $id, 'stashd:plugin/io-host.byte-stream');
     }
 

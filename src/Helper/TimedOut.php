@@ -7,6 +7,4 @@ namespace Stashd\PluginSdk\Helper;
 /**
  * The host stopped the helper because it exceeded its timeout.
  */
-final readonly class TimedOut
-{
-}
+final readonly class TimedOut {}

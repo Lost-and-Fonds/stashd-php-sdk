@@ -19,22 +19,21 @@ use stdClass;
 final class RemoteStagedArtifact
 {
     /**
-     * Invocation in which this finished output is valid.
-     */
-    private readonly Invocation $invocation;
-
-    /**
-     * Host-issued descriptor checked when reopening the output.
-     */
-    private readonly StagedArtifact $receipt;
-
-    /**
      * Keep the host-issued receipt and its invocation together.
      */
-    public function __construct(Invocation $invocation, StagedArtifact $receipt)
+    public function __construct(
+        private readonly Invocation $invocation,
+        private readonly StagedArtifact $receipt,
+    ) {}
+
+    /**
+     * Return the finished descriptor for an outbound lifecycle result.
+     */
+    public function receipt(): StagedArtifact
     {
-        $this->invocation = $invocation;
-        $this->receipt = $receipt;
+        $this->invocation->requireActive();
+
+        return $this->receipt;
     }
 
     /**

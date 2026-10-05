@@ -21,25 +21,16 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagingArea;
 final class Helpers
 {
     /**
-     * The current plugin call.
-     */
-    private readonly Invocation $invocation;
-
-    /**
-     * Credentials the host made available to this call. These are selectors, not secret values.
-     * @var list<Credential>
-     */
-    private readonly array $credentials;
-
-    /**
      * Create the helper API for one plugin call.
      * @param list<Credential> $credentials
      */
-    public function __construct(Invocation $invocation, array $credentials = [])
-    {
-        $this->invocation = $invocation;
-        $this->credentials = $credentials;
-    }
+    public function __construct(
+        private readonly Invocation $invocation,
+        /**
+         * @var list<Credential>
+         */
+        private readonly array $credentials = [],
+    ) {}
 
     /**
      * Return the credentials this plugin call may pass to helpers.

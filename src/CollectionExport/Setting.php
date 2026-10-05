@@ -10,21 +10,10 @@ namespace Stashd\PluginSdk\CollectionExport;
 final readonly class Setting
 {
     /**
-     * Opaque plugin-defined option key; duplicate interpretation is not invented by the SDK.
-     */
-    public string $key;
-
-    /**
-     * Boolean, signed integer or text, corresponding to the three canonical option cases.
-     */
-    public bool|int|string $value;
-
-    /**
      * Retain configuration types so textual numbers remain text rather than numeric options.
+     *
+     * @param string $key Opaque plugin-defined key; duplicate keys are preserved.
+     * @param bool|int|string $value Boolean, signed integer or text.
      */
-    public function __construct(string $key, bool|int|string $value)
-    {
-        $this->key = $key;
-        $this->value = $value;
-    }
+    public function __construct(public string $key, public bool|int|string $value) {}
 }

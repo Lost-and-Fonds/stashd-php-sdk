@@ -20,22 +20,12 @@ use stdClass;
 final class RemoteStagedWriter implements StagedWriter, OwnedResource
 {
     /**
-     * Host invocation that owns this proxy's authority.
-     */
-    private readonly Invocation $invocation;
-
-    /**
-     * Opaque identity tracked by the invocation resource ledger.
-     */
-    private readonly string $id;
-
-    /**
      * Bind a writer already installed in the invocation ledger.
      */
-    public function __construct(Invocation $invocation, string $id)
-    {
-        $this->invocation = $invocation;
-        $this->id = $id;
+    public function __construct(
+        private readonly Invocation $invocation,
+        private readonly string $id,
+    ) {
         $invocation->resources->requireOwned($invocation->id, $id, 'stashd:plugin/io-host.staged-writer');
     }
 

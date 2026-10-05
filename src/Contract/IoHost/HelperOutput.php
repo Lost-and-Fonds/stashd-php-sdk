@@ -11,27 +11,12 @@ namespace Stashd\PluginSdk\Contract\IoHost;
 final readonly class HelperOutput
 {
     /**
-     * The original stdout or stderr channel of these bytes.
-     * @var HelperOutputStream
-     */
-    public HelperOutputStream $channel;
-
-    /**
-     * Nonempty unmodified output bytes, including carriage returns and invalid text encodings.
-     * @var list<int>
-     */
-    public array $bytes;
-
-    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param HelperOutputStream $channel
      * @param list<int> $bytes
      */
     public function __construct(
-        HelperOutputStream $channel,
-        array $bytes,
-    ) {
-        $this->channel = $channel;
-        $this->bytes = $bytes;
-    }
+        public HelperOutputStream $channel,
+        public array $bytes,
+    ) {}
 }

@@ -10,15 +10,8 @@ namespace Stashd\PluginSdk\Helper;
 final readonly class Failed
 {
     /**
-     * Diagnostic message supplied by the host.
-     */
-    public string $detail;
-
-    /**
      * Describe a host or runtime failure.
+     * @param string $detail Diagnostic message supplied by the host.
      */
-    public function __construct(string $detail)
-    {
-        $this->detail = $detail;
-    }
+    public function __construct(public string $detail) {}
 }

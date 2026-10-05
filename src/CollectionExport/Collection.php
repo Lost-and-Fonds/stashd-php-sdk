@@ -10,22 +10,21 @@ namespace Stashd\PluginSdk\CollectionExport;
 final readonly class Collection
 {
     /**
-     * Optional collection presentation title, not a durable identifier.
+     * Build a typed ordered collection without inventing a universal cardinality ceiling.
      */
-    public ?string $title;
+    public function __construct(
+        /**
+         * Optional collection presentation title, not a durable identifier.
+         */
+        public ?string $title,
+        Entry ...$entries,
+    ) {
+        $this->entries = array_values($entries);
+    }
 
     /**
      * Ordered generic entries; an empty collection is valid.
      * @var list<Entry>
      */
     public array $entries;
-
-    /**
-     * Build a typed ordered collection without inventing a universal cardinality ceiling.
-     */
-    public function __construct(?string $title, Entry ...$entries)
-    {
-        $this->title = $title;
-        $this->entries = array_values($entries);
-    }
 }

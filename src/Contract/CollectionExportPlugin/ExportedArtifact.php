@@ -11,36 +11,14 @@ namespace Stashd\PluginSdk\Contract\CollectionExportPlugin;
 final readonly class ExportedArtifact
 {
     /**
-     * Canonical filename value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $filename;
-
-    /**
-     * Canonical media-type value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $mediaType;
-
-    /**
-     * Canonical contents value; retained in contract order without normalization.
-     * @var list<int>
-     */
-    public array $contents;
-
-    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param string $filename
      * @param string $mediaType
      * @param list<int> $contents
      */
     public function __construct(
-        string $filename,
-        string $mediaType,
-        array $contents,
-    ) {
-        $this->filename = $filename;
-        $this->mediaType = $mediaType;
-        $this->contents = $contents;
-    }
+        public string $filename,
+        public string $mediaType,
+        public array $contents,
+    ) {}
 }

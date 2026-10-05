@@ -12,15 +12,12 @@ use Stashd\PluginSdk\Shared\Unsigned64;
 final readonly class StdoutActivity
 {
     /**
-     * Total staged stdout bytes accepted so far.
-     */
-    public Unsigned64 $bytes;
-
-    /**
      * Create an activity event from the exact byte count.
      */
-    public function __construct(Unsigned64 $bytes)
-    {
-        $this->bytes = $bytes;
-    }
+    public function __construct(
+        /**
+         * Total staged stdout bytes accepted so far.
+         */
+        public Unsigned64 $bytes,
+    ) {}
 }

@@ -11,14 +11,6 @@ use InvalidArgumentException;
  */
 final class Trace
 {
-    /**
-     * Selected verbosity, fixed for this process trace instance.
-     */
-    private readonly TraceLevel $level;
-
-    /**
-     * Monotonic origin for reconstructing elapsed event timing.
-     */
     private readonly int $started;
 
     /**
@@ -31,8 +23,10 @@ final class Trace
      * Bind a safe diagnostics sink; stdout aliases are rejected even at maximum verbosity.
      * @param resource $sink
      */
-    public function __construct(TraceLevel $level, $sink)
-    {
+    public function __construct(
+        private readonly TraceLevel $level,
+        $sink,
+    ) {
         $metadata = stream_get_meta_data($sink);
         $uri = $metadata['uri'] ?? '';
 
@@ -40,7 +34,6 @@ final class Trace
             throw new InvalidArgumentException('Diagnostics must not use RPC stdout');
         }
 
-        $this->level = $level;
         $this->sink = $sink;
         $this->started = hrtime(true);
     }

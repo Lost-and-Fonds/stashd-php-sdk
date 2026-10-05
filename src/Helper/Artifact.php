@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Helper;
 
+use Generator;
+use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedArtifact;
 
 /**
@@ -12,23 +14,25 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagedArtifact;
 final class Artifact
 {
     /**
-     * The host-managed finished output.
-     */
-    private readonly RemoteStagedArtifact $artifact;
-
-    /**
      * Create a readable artifact from finished staged output.
      */
-    public function __construct(RemoteStagedArtifact $artifact)
+    public function __construct(
+        private readonly RemoteStagedArtifact $artifact,
+    ) {}
+
+    /**
+     * Return the finished output for a successful plugin result.
+     */
+    public function receipt(): StagedArtifact
     {
-        $this->artifact = $artifact;
+        return $this->artifact->receipt();
     }
 
     /**
      * Read the artifact a chunk at a time. The stream closes automatically when iteration ends.
-     * @return \Generator<int, string>
+     * @return Generator<int, string>
      */
-    public function chunks(): \Generator
+    public function chunks(): Generator
     {
         $stream = $this->artifact->open();
 

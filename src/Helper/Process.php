@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Helper;
 
+use Generator;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventOutput;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventStdoutActivity;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventTerminal;
@@ -12,9 +13,9 @@ use Stashd\PluginSdk\Contract\IoHost\HelperTerminalCancelled;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalExited;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalFailed;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalTimedOut;
+use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use Stashd\PluginSdk\Runtime\Resource\RemoteHelperProcess;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
-use Stashd\PluginSdk\Runtime\ProtocolViolation;
 
 /**
  * A running helper process.
@@ -22,23 +23,15 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 final class Process
 {
     /**
-     * The underlying process for this plugin call.
-     */
-    private readonly RemoteHelperProcess $process;
-
-    /**
      * Create the public wrapper around a running helper.
      */
-    public function __construct(RemoteHelperProcess $process)
-    {
-        $this->process = $process;
-    }
+    public function __construct(private readonly RemoteHelperProcess $process) {}
 
     /**
      * Read events as they happen. Iteration yields output or activity, then one final outcome, and stops at EOF.
-     * @return \Generator<int, Output|StdoutActivity|Exited|Cancelled|TimedOut|Failed>
+     * @return Generator<int, Output|StdoutActivity|Exited|Cancelled|TimedOut|Failed>
      */
-    public function events(): \Generator
+    public function events(): Generator
     {
         while (($event = $this->process->nextEvent()) !== null) {
             if ($event instanceof HelperEventOutput) {

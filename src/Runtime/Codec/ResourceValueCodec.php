@@ -180,7 +180,7 @@ final class ResourceValueCodec
             return match ($schema['name']) {
                 'string' => Values::text($value),
                 'bool' => Values::boolean($value),
-                'u64' => $value instanceof \Stashd\PluginSdk\Shared\Unsigned64 ? $value->decimal : Values::unsigned($value)->decimal,
+                'u64' => $value instanceof Unsigned64 ? $value->decimal : Values::unsigned($value)->decimal,
                 's64' => (string) Values::signed($value),
                 'f32', 'f64' => Values::floating($schema['name'], $value),
                 default => Values::integer(self::name($schema['name']), $value),
@@ -366,24 +366,35 @@ final class ResourceValueCodec
      */
     private static function definition(string $name, string $interface): array
     {
-        $schema = self::schema();
-        $uses = self::mapping(self::interface($schema, $interface)['uses']);
-        $owner = self::name($uses[$name] ?? $interface);
-        $definition = self::interface($schema, $owner);
+        $contracts = self::sequence(self::schema()['contracts']);
 
-        foreach (['records' => 'record', 'variants' => 'variant', 'enums' => 'enum'] as $section => $kind) {
-            $values = self::mapping($definition[$section]);
+        foreach ($contracts as $contract) {
+            $contract = self::mapping($contract);
+            $interfaces = self::mapping($contract['interfaces']);
 
-            if (isset($values[$name])) {
-                return [$owner, $name, ['kind' => $kind, 'value' => $values[$name]]];
+            if (!isset($interfaces[$interface])) {
+                continue;
             }
-        }
 
-        foreach (self::sequence($definition['resources']) as $resource) {
-            $resource = self::mapping($resource);
+            $interfaceMap = self::mapping($interfaces[$interface]);
+            $uses = self::mapping($interfaceMap['uses'] ?? []);
+            $owner = self::name($uses[$name] ?? $interface);
+            $definition = self::mapping($interfaces[$owner] ?? null);
 
-            if ($resource['name'] === $name) {
-                return [$owner, $name, ['kind' => 'resource', 'value' => $resource]];
+            foreach (['records' => 'record', 'variants' => 'variant', 'enums' => 'enum'] as $section => $kind) {
+                $values = self::mapping($definition[$section]);
+
+                if (isset($values[$name])) {
+                    return [$owner, $name, ['kind' => $kind, 'value' => $values[$name]]];
+                }
+            }
+
+            foreach (self::sequence($definition['resources']) as $resource) {
+                $resource = self::mapping($resource);
+
+                if ($resource['name'] === $name) {
+                    return [$owner, $name, ['kind' => 'resource', 'value' => $resource]];
+                }
             }
         }
 
@@ -395,18 +406,6 @@ final class ResourceValueCodec
      * @param array<string, mixed> $schema
      * @return array<string, mixed>
      */
-    private static function interface(array $schema, string $name): array
-    {
-        foreach (self::sequence($schema['contracts']) as $contract) {
-            $interfaces = self::mapping(self::mapping($contract)['interfaces']);
-
-            if (isset($interfaces[$name])) {
-                return self::mapping($interfaces[$name]);
-            }
-        }
-
-        throw new ProtocolViolation('Unknown WIT interface');
-    }
 
     /**
      * Load the checked-in immutable schema without inferring identity from Composer metadata.

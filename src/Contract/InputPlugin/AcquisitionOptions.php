@@ -13,27 +13,12 @@ use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 final readonly class AcquisitionOptions
 {
     /**
-     * Canonical options value; retained in contract order without normalization.
-     * @var list<InputOption>
-     */
-    public array $options;
-
-    /**
-     * Canonical credentials value; retained in contract order without normalization.
-     * @var list<CredentialBinding>
-     */
-    public array $credentials;
-
-    /**
      * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
      * @param list<InputOption> $options
      * @param list<CredentialBinding> $credentials
      */
     public function __construct(
-        array $options,
-        array $credentials,
-    ) {
-        $this->options = $options;
-        $this->credentials = $credentials;
-    }
+        public array $options,
+        public array $credentials,
+    ) {}
 }

@@ -12,23 +12,18 @@ use NoDiscard;
 final readonly class ByteRange
 {
     /**
-     * Zero-based starting offset; an offset exactly at EOF is valid.
-     */
-    public Unsigned64 $offset;
-
-    /**
-     * Requested extent, or null for all remaining bytes; zero requests an empty stream.
-     */
-    public ?Unsigned64 $length;
-
-    /**
      * Preserve requested magnitudes independently of negotiated RPC frame sizes.
      */
-    public function __construct(Unsigned64 $offset, ?Unsigned64 $length = null)
-    {
-        $this->offset = $offset;
-        $this->length = $length;
-    }
+    public function __construct(
+        /**
+         * Zero-based starting offset; an offset exactly at EOF is valid.
+         */
+        public Unsigned64 $offset,
+        /**
+         * Requested extent, or null for all remaining bytes; zero requests an empty stream.
+         */
+        public ?Unsigned64 $length = null,
+    ) {}
 
     /**
      * Return the clamped extent, or null for a denied offset, after authority validation.
