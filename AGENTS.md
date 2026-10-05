@@ -1,450 +1,477 @@
-# Stashd PHP SDK 0.4.x — repository instructions
+# Stashd PHP SDK
 
-This branch is a clean rewrite of the PHP SDK for the frozen language-neutral
-contract `stashd:plugin@0.18.0`.
+This repository is the PHP SDK for Stashd plugins.
 
-The 0.3.x implementation is history, not an architecture template. Git preserves
-it. Do not restore old classes, wire aliases, lifecycle phases, or compatibility
-shims unless the frozen plugin-api contract independently requires them.
+Stashd plugins communicate with Core through the frozen `stashd:plugin@0.18.0` contract. The SDK's job is to make that contract feel like normal, pleasant PHP.
 
-## Source of truth
+The public SDK should hide protocol machinery wherever possible.
 
-The canonical contract is the `Lost-and-Fonds/plugin-api` repository at
-`stashd:plugin@0.18.0` (plugin-api main, merge `9bc3ef0e0f915fec296796bbbb56a6c35d674326`).
+## Priorities
 
-The rewrite first targeted 0.17. The live helper-output blocker required the
-frozen 0.18 contract; do not implement 0.17 helper behavior as a fallback.
+In order:
 
-When SDK design, existing PHP code, examples, comments, tests, or intuition
-disagree with plugin-api 0.18, plugin-api wins.
+1. Correctly implement the frozen plugin contract.
+2. Give plugin authors a small, obvious PHP API.
+3. Keep protocol/runtime complexity below the public API boundary.
+4. Prefer simple code over abstraction.
+5. Prefer deletion over compatibility with unfinished rewrite APIs.
 
-Do not modify plugin-api from this repository. Do not redesign the contract
-while implementing the SDK.
+This is an unreleased rewrite. Do not preserve bad APIs merely because they already exist.
 
-## Product target
+## PHP version
 
-- SDK line: `stashd/php-sdk 0.4.x`
-- Contract identity: `stashd:plugin@0.18.0`
-- Language target: PHP 8.5+
-- This is a from-scratch authoring SDK, not an in-place migration of 0.3.x.
+Target PHP 8.5.
 
-Package version and contract identity are independent concepts.
+Use modern PHP features when they make the code simpler.
 
-## Design goal
+The SDK requires 64-bit PHP.
 
-Build an idiomatic PHP 8.5 authoring SDK over an exact, mostly invisible
-implementation of the frozen contract.
+Prefer:
 
-Plugin authors should work with typed PHP objects and focused lifecycle
-interfaces. They should not need to know that JSON frames, `$resource`
-objects, correlation IDs, or WIT encoding exist.
+- constructor property promotion
+- `readonly`
+- native enums
+- union and nullable types
+- named arguments where useful
+- generators for streaming values
+- `#[NoDiscard]` where ignoring a result is probably a mistake
 
-At the wire boundary, correctness beats convenience. Above the wire boundary,
-ergonomics and type safety matter.
+Import attributes and classes normally. Do not write things like `#[\NoDiscard]`.
 
-A useful layering model is:
+## Public API
 
-1. author-facing lifecycle interfaces and immutable typed values;
-2. canonical contract model;
-3. invocation/runtime/resource machinery;
-4. framing and exact JSON/WIT codecs.
+The important public entry points should be obvious when a developer opens `src/`:
 
-Keep these responsibilities separated.
+- `Stashd\PluginSdk\InputPlugin`
+- `Stashd\PluginSdk\BroadcastPlugin`
+- `Stashd\PluginSdk\EnrichmentPlugin`
+- `Stashd\PluginSdk\CollectionExporter`
+- `Stashd\PluginSdk\Helpers`
 
-## PHP 8.5
+Supporting author-facing types should live in small domain namespaces such as:
 
-Use PHP 8.5 idiomatically and deliberately. Use the shared
-`hipsterjazzbo/php-style` PHP-CS-Fixer configuration for common formatting
-rules; keep SDK-specific semantic documentation checks here. Import `NoDiscard`
-before using `#[NoDiscard]`, rather than using `#[\NoDiscard]`.
+- `Input\`
+- `Broadcast\`
+- `Enrichment\`
+- `CollectionExport\`
+- `Helper\`
 
-Prefer modern features when they make the API clearer, safer, smaller, or more
-immutable. Examples include readonly/final value objects, constructor promotion,
-enums, clone-with, first-class callables, and imported `#[NoDiscard]` where silently
-ignoring a returned value is dangerous.
+Do not make plugin authors use types from:
 
-Do not preserve older-PHP patterns for compatibility. Do not use new syntax only
-because it is new.
+- `Contract\`
+- `Runtime\`
+- generated codecs
+- RPC internals
 
-Opaque contract values remain opaque. Do not trim, case-fold, URI-normalize, or
-otherwise reinterpret IDs, references, schema identifiers, credential
-references, continuation values, or plugin-owned state unless plugin-api
-explicitly requires it.
+Those are implementation details.
 
-## Public API layout — root `src/` is the shopfront
+## Design from the plugin author's point of view
 
-Treat the repository root `src/` namespace as the obvious starting point for a third-party plugin developer.
+Public names should describe what the developer thinks they are doing.
 
-The small set of primary developer-facing entry interfaces/classes SHOULD live directly under:
+Prefer names such as:
 
-`Stashd\\PluginSdk\\`
+- `resolve`
+- `discover`
+- `acquire`
+- `publish`
+- `action`
+- `enrich`
+- `export`
+- `start`
+- `events`
+- `cancel`
 
-Examples include:
+Do not blindly copy vague protocol names into the public API.
 
-- `InputPlugin`;
-- `BroadcastPlugin`;
-- `EnrichmentPlugin`;
-- `CollectionExporter`;
-- a common bootstrap/entrypoint type if one is genuinely useful.
+Be suspicious of names such as:
 
-A plugin author should be able to open `src/` and immediately see the handful of things they are expected to implement or invoke.
+- `Operation`
+- `Context`
+- `Descriptor`
+- `Value`
+- `Request`
+- `Result`
 
-Do **not** flatten every public value type into the root namespace. Supporting author-facing values should remain grouped by coherent domain, for example:
+They are allowed when they genuinely make the API clearer, but do not create them automatically.
 
-- `Stashd\\PluginSdk\\Input\\...`;
-- `Stashd\\PluginSdk\\Broadcast\\...`;
-- `Stashd\\PluginSdk\\Enrichment\\...`;
-- `Stashd\\PluginSdk\\CollectionExport\\...`;
-- `Stashd\\PluginSdk\\Shared\\...`.
+## Keep the SDK boring
 
-Internal machinery belongs behind clearly internal-looking namespaces such as:
+Use normal PHP types whenever they are sufficient:
 
-- `Contract\\` for exact frozen WIT/contract representations;
-- `Runtime\\` for RPC/resource/process machinery;
-- `Diagnostics\\` for tracing internals;
-- `Tooling\\` for repository/build tooling.
+- `int`
+- `string`
+- `bool`
+- `?T`
+- native enums
+- `list<T>` arrays
 
-The generated exact `Contract\\*` layer is **not** the intended plugin-author API. It exists to keep the wire/runtime exact. Most third-party plugin code should never need to import it.
+Do not create a value object merely because a value has a name.
 
-Design for this mental model:
+Create a class when it represents a useful domain concept, carries behaviour, enforces an important invariant, or materially improves the author API.
 
-- root `src/`: “start here”;
-- domain namespaces: “things you use while implementing it”;
-- `Contract/Runtime/Tooling`: “storage room; normally do not touch”.
+Do not recreate WIT's type hierarchy in PHP.
 
-Do not let `src/` become a flat junk drawer again. Only primary interaction points belong at the root.
+## Integers
 
-## Public API rules
+Protocol integer widths belong primarily to the runtime boundary.
 
-- Public authoring APIs must be typed. Do not expose associative-array wire
-  structures as the normal plugin-author API.
-- Prefer immutable value objects.
-- Prefer lifecycle-specific capability surfaces over one giant god context when
-  that prevents illegal operations from being representable.
-- Do not create a new god `WireMapper`. Keep codecs/mappers focused by protocol
-  or contract area.
-- Resource handles are runtime implementation details. Authors should see typed
-  objects such as streams, writers, collections, reporters, and HTTP clients.
-- Do not invent filesystem paths, process environment conventions, callback
-  servers, or other semantics not granted by the contract.
-- Do not preserve 0.3.x public API compatibility merely to reduce churn. 0.4.0
-  is the deliberate breaking rewrite.
+Author-facing byte counts, offsets, lengths, counters, and similar realistic Stashd quantities should normally use PHP `int`.
 
-## Plugin developer experience
+The protocol/runtime must still validate and preserve the complete WIT value range.
 
-A third-party plugin MUST be practical to develop and test without installing or running Stashd Core.
+If a valid protocol value cannot be represented by the supported PHP binding, fail explicitly rather than silently narrowing or rounding it.
 
-Core is the final end-to-end environment, not a prerequisite for normal plugin development.
+Do not expose `int|string` unions merely to work around protocol integer encoding.
+
+Do not expose protocol-specific integer wrapper classes unless there is no simpler author-facing representation.
+
+## Immutable author-facing data
+
+Prefer public readonly promoted properties.
+
+Good:
+
+```php
+final readonly class Asset
+{
+    /**
+     * Create a saved asset.
+     *
+     * @param string $id Stable asset ID.
+     * @param string $reference Opaque reference used to read the asset.
+     * @param string|null $mediaType Media type when known.
+     * @param int $sizeBytes File size in bytes.
+     */
+    public function __construct(
+        public string $id,
+        public string $reference,
+        public ?string $mediaType,
+        public int $sizeBytes,
+    ) {}
+}
+```
+
+Do not write separate property declarations, constructor assignments, and trivial getters for immutable data.
+
+Keep properties private when access itself has behaviour, authority, laziness, or mutable state.
+
+## Constructor property promotion
+
+Use property promotion whenever a constructor merely assigns a same-named parameter to a property.
+
+Do not write:
+
+```php
+private readonly string $id;
+
+public function __construct(string $id)
+{
+    $this->id = $id;
+}
+```
+
+when this is sufficient:
+
+```php
+public function __construct(
+    private readonly string $id,
+) {}
+```
+
+Generated record-like classes should follow the same rule.
+
+## Collections
+
+Normal PHP arrays with precise PHPDoc are fine.
+
+Prefer:
+
+```php
+/** @param list<Asset> $assets */
+```
+
+over creating `AssetCollection`, unless the collection itself has meaningful behaviour or invariants.
+
+Do not create collection classes merely for stronger nominal typing.
+
+## Enums and closed sets
+
+If a public value has a finite known set of cases, prefer a native PHP enum.
+
+Do not expose unchecked strings such as:
+
+```php
+public string $intent;
+```
+
+when the valid values are a closed set controlled by the SDK.
+
+Opaque IDs, references, continuation tokens, plugin-defined action names, and similar intentionally open strings should remain strings.
+
+Do not invent semantics that the contract does not define.
+
+## Binary data
+
+PHP strings are the public representation for byte sequences.
+
+Do not expose `list<int>` to plugin authors for ordinary binary data.
+
+Conversion between protocol `list<u8>` and PHP binary strings belongs at the runtime boundary.
+
+## Generated contract code
+
+Generated code exists to represent the frozen protocol exactly.
+
+Do not manually edit generated files as the primary fix.
+
+If generated output is wrong or unnecessarily verbose, change the generator and regenerate.
+
+Generated immutable record classes should normally:
+
+- use constructor property promotion
+- use readonly properties
+- preserve field order
+- preserve exact protocol types
+- avoid redundant property declarations
+- avoid redundant constructor assignments
+- use useful constructor `@param` documentation
+
+Generated code may be large. Raw line count is not a problem.
+
+The public conceptual surface is the metric that matters.
+
+## Runtime and protocol code
+
+Runtime code may be more complicated than public code when that complexity enforces real protocol guarantees.
+
+Keep code that protects:
+
+- RPC framing
+- resource ownership
+- invocation lifetime
+- staged writer transfer
+- helper process cleanup
+- terminal/EOF ordering
+- frame-size limits
+- exact variant handling
+- strict protocol validation
+
+Do not simplify these guarantees away for aesthetics.
+
+But do not expose them to plugin authors unless they affect what the author must do.
+
+## Helpers and long-running work
+
+Slow work is allowed.
+
+Silent work is not.
+
+Helper APIs must preserve live stdout/stderr/activity reporting.
+
+Do not buffer an entire helper process before exposing output.
+
+Do not lose output because a plugin consumes events slowly.
+
+Do not allow helpers to become orphaned when resources or invocations end.
+
+Core owns job scheduling and concurrency. A plugin invocation should represent bounded work, not an immortal campaign.
+
+## No-Core development
+
+Plugin authors must be able to develop and test plugins without running a full Stashd Core instance.
 
 The intended development ladder is:
 
-1. edit plugin code;
-2. run normal PHP tests through SDK-provided in-process test harnesses;
-3. run a package/process check through an SDK-provided development host;
-4. use a full Stashd Core instance only for final end-to-end testing when needed.
+1. in-process SDK tests/harnesses
+2. real plugin subprocess against the SDK development host
+3. optional interactive/manual testing
+4. full Core for final integration testing
 
-### In-process testing
+Do not make ordinary plugin development require a local Core installation.
 
-The SDK SHOULD provide simple public testing helpers under `Stashd\PluginSdk\Testing\...` for each plugin type.
+## First-party plugins are forcing cases
 
-Expected primary helpers include:
+Use the real first-party plugins to judge whether the SDK is pleasant:
 
-- `InputHarness`;
-- `BroadcastHarness`;
-- `EnrichmentHarness`;
-- `CollectionExportHarness`.
+- YouTube
+- Podcast
+- Jellyfin
+- Plex
 
-These harnesses exist for ordinary plugin tests. They should call the same public author-facing interfaces plugin code implements and make it easy to supply fake HTTP responses, credential bindings, Assets, staging, helper results, and other host-provided data relevant to the lifecycle under test.
+Do not add capabilities merely because they might theoretically be useful.
 
-A plugin author should not need to construct RPC frames, resource handles, generated `Contract\*` values, or Stashd Core objects to test plugin behavior.
+Add or change SDK functionality when a concrete plugin use case forces it.
 
-### Real package/process testing
+If a first-party plugin requires awkward workarounds, first ask whether the SDK API is wrong.
 
-The SDK SHOULD also ship a small development host and CLI that can launch the real package artifact from `stashd-plugin.json` and speak the canonical Stashd plugin protocol to it.
+## Comments
 
-The preferred command is:
+Write comments like a normal PHP developer.
 
-`vendor/bin/stashd-plugin check`
+Public documentation should use short, direct English suitable for someone seeing Stashd for the first time and for developers who may speak English as a second language.
 
-It should verify, at minimum:
+Explain:
 
-- `stashd-plugin.json` exists and is valid;
-- the declared contract identity is supported;
-- component worlds are valid;
-- declared artifacts exist and can be launched;
-- Composer/autoload startup succeeds;
-- the plugin process completes canonical RPC hello negotiation;
-- the process implements the declared world strongly enough to run basic lifecycle probes;
-- protocol/resource cleanup failures are reported clearly.
+- what the thing is
+- when the developer uses it
+- unusual behaviour the developer needs to know
 
-This path MUST use the real subprocess boundary and the same canonical protocol/runtime rules exercised by SDK conformance tests. Do not create a second simplified wire interpretation only for developer tooling.
+Do not narrate implementation details.
 
-A friendly interactive command such as:
+Avoid unnecessary wording such as:
 
-`vendor/bin/stashd-plugin try`
+- canonical
+- host-mediated
+- invocation-scoped
+- protocol identity
+- contract fact
+- exact focused
+- preserved without normalization
+- assemble the complete
+- terminal race
 
-is encouraged for manually exercising lifecycle calls without Core. It may prompt for simple inputs and display readable results. Repeatable fixture-driven execution is also encouraged.
+Use protocol terminology only where it genuinely helps.
 
-### Test doubles and host services
+Do not write comments that merely restate the method name or PHP type.
 
-Testing helpers may provide convenient fakes for:
+## PHPDoc
 
-- HTTP responses;
-- credential bindings;
-- preserved Assets;
-- staging output;
-- helper execution;
-- progress/log capture;
-- bounded collections and streams.
+Useful multiline PHPDoc is required for:
 
-These fakes must preserve the important contract semantics they represent. Convenience must not teach plugin authors behavior that will fail against the real host.
+- classes
+- methods and functions
+- properties
+- constants
+- enum cases
 
-### Starter repositories as forcing fixtures
+Promoted constructor properties may be documented by the matching constructor `@param` entry.
 
-The private starter repositories:
+Example:
 
-- `Lost-and-Fonds/example-input-plugin`;
-- `Lost-and-Fonds/example-broadcast-plugin`;
-- `Lost-and-Fonds/example-enrichment-plugin`;
-- `Lost-and-Fonds/example-collection-export-plugin`;
+```php
+/**
+ * Create a saved asset.
+ *
+ * @param string $id Stable asset ID.
+ * @param string $reference Opaque reference used to read the asset.
+ */
+public function __construct(
+    public string $id,
+    public string $reference,
+) {}
+```
 
-are design fixtures for the 0.4 author experience.
+Do not add a second redundant docblock above each promoted property.
 
-The finished SDK should make their intended public API compile and their normal `composer test` workflow pass without importing `Contract`, `Runtime`, `Diagnostics`, or `Tooling`.
+Keep PHPDoc that static analysis needs, especially `list<T>` and shaped arrays.
 
-If making the SDK conform to the frozen contract forces an example to change, keep the example simple. Do not expose storage-room internals merely to preserve a sketch.
+## Error handling
 
-### Batching and liveness conventions
+Protocol violations and ordinary operational failures are different things.
 
-Where an author-facing API exposes control over batched traversal or transfer, use the optional name `batchSize` consistently.
+A malformed or impossible host/plugin message is a protocol violation.
 
-`batchSize` is a preference, not a promise. The SDK supplies a sensible default, and a smaller host/protocol limit may cap it. Changing it must not change item meaning or ordering.
+An allowed operation that fails normally should use the appropriate typed failure path.
 
-The SDK may provide item-at-a-time ergonomics while batching internally. Explicit commit/flush operations remain appropriate when they represent a useful checkpoint.
+Do not turn normal failures into protocol violations merely because they are inconvenient.
 
-Developer tooling should model long-running work using progress-based liveness rather than one short wall-clock timeout. Meaningful host-observable work keeps an invocation alive automatically. Empty heartbeat spam must not make a dead job immortal.
+Error messages should say what is wrong in plain language.
 
-Use a separate, generous, host-configurable absolute lifetime as a final safety fuse. No invocation should be able to hang forever.
+## Dependencies
 
-Committed discovery work may become available to the host before discovery finishes. Host-controlled acquisition concurrency may therefore overlap with ongoing discovery.
+Do not add dependencies casually.
 
-See `docs/job-execution.md`.
+Use a mature package when it replaces a generic solved problem and materially removes maintenance burden.
 
-## Documentation audience and generation rules
+Do not add a framework to avoid writing a small amount of Stashd-specific code.
 
-Public author-facing documentation and example code MUST use simple, direct English suitable for a developer who has never used Stashd before and may speak English as a second language.
+Before adding a dependency, ask:
 
-For public SDK PHPDoc, READMEs, starter plugins, tutorials, and examples:
+1. Is this generic infrastructure rather than Stashd semantics?
+2. Does the package model our actual requirements?
+3. Does it remove meaningful code?
+4. Are we comfortable exposing its types in our public API?
+5. Is the maintenance/release story healthy?
 
-- prefer short sentences and common words;
-- explain what something does before explaining how it is implemented;
-- define Stashd-specific terms when the reader first needs them;
-- avoid internal architecture language such as RPC, WIT, wire, lifecycle, host capability, resource handle, author-facing surface, or contract representation unless that detail is necessary for the task being explained;
-- do not write as if the reader followed the SDK's design process;
-- do not refer to implementation tradeoffs that only SDK maintainers need to know;
-- prefer concrete verbs such as “save”, “find”, “publish”, “read”, “write”, and “return” over abstract phrases such as “execute the lifecycle” or “consume the selected collection”;
-- keep precision where it matters, but do not use specialist language merely because the implementation uses it.
+Do not introduce dependencies during unrelated cleanup work.
 
-A useful test is: a PHP developer seeing Stashd for the first time should understand the comment without reading the protocol repository.
+## Duplication and transitional code
 
-Documentation quality is part of the SDK design, not just a CI checkbox.
+This branch has gone through several API iterations.
 
-Generated PHPDoc MUST be written for a human reader and must explain the contract meaning of the declaration. Generic filler such as “Canonical id value”, “Gets the value”, “Immutable contract fact”, or “retained in contract order” is not sufficient by itself even if it satisfies the mechanical prose checker.
+Delete obsolete generations of an idea.
 
-Use this priority order for generated contract documentation:
+Do not keep:
 
-1. **Normative WIT/protocol documentation first.**
-   - Preserve and adapt the frozen plugin-api comments that explain identity, opacity, ownership, lifetime, authority, batching, ordering, retryability, null meaning, invariants, or other semantics.
-   - Lightly adapt wording for a PHP reader where necessary, but do not weaken or invent semantics.
-   - When relevant semantics live in a normative protocol document rather than directly beside the WIT declaration, the generator or a small explicit documentation mapping MAY supply that text.
+- old and new names for the same concept
+- aliases returning the same value
+- duplicate interfaces
+- transitional DTOs
+- compatibility shims for unreleased APIs
+- tests whose only purpose is preserving obsolete ceremony
 
-2. **Audience-aware semantic fallback text second.**
-   - If the frozen contract supplies no useful prose, generate a description based on the declaration's role and type rather than its spelling alone.
-   - Opaque strings should say that they are opaque, who owns/interprets them, and that the SDK preserves them verbatim.
-   - Resources should explain invocation scope, ownership/borrowing, explicit release, and stale-handle behavior where relevant.
-   - Lists should explain ordering, duplicate significance, and ownership/interpretation where known.
-   - Optional values should explain what `null` means when the contract establishes that meaning.
-   - Enum/variant cases should explain their protocol identity or semantic branch where known.
-   - Quantities should state units and bounds where relevant.
-   - References must not be described as paths, URLs, bearer credentials, or other stronger concepts unless the contract says so.
+If two public APIs do the same thing, choose one.
 
-3. **Hand-written author-facing documentation for the shopfront API.**
-   - Primary root interfaces/classes and domain-facing author types MUST be deliberately documented for third-party PHP plugin developers.
-   - Do not generate vague contract-shaped prose for the main author experience merely because generation is convenient.
-   - Explain when plugin authors implement/call the API, what the host supplies, what the plugin owns, what may fail, what is opaque, what lifetime applies, and any ordering/retry/security implications.
+## Testing
 
-Generated `Contract\\*` types should make their audience explicit. Where useful, their type-level docs should say that they are internal exact representations used by runtime/codecs to preserve the frozen contract and that plugin authors normally use the corresponding author-facing SDK API instead.
+Tests should protect behaviour and useful API guarantees.
 
-The generator is the source of truth for generated documentation. Do not hand-edit hundreds of generated PHPDoc blocks: improve `tools/generate-contract.py`, its input documentation data, or a small explicit semantic documentation map so regeneration remains deterministic.
+Do not test implementation ceremony simply because it exists.
 
-A small number of hand-maintained semantic overrides is acceptable for important concepts whose meaning cannot be recovered safely from the parsed WIT alone, for example preserved/staged Assets, discovery continuation/refresh state, lifecycle interfaces, and resource ownership types. Keep such overrides explicit, reviewable, and tied to the frozen contract rather than duplicating arbitrary prose across generated files.
+When changing generated code, verify regeneration is reproducible.
 
-The mechanical documentation checker proves that description prose exists. Human review MUST additionally reject generated boilerplate that fails to explain useful semantics.
+When changing runtime/protocol behaviour, add focused regression tests.
 
-## Mandatory documentation — CI invariant
+When changing public APIs, update starter plugins and examples in the same work.
 
-EVERY PHP declaration must have PHPDoc with real description prose.
+Run the relevant:
 
-This includes every:
+- test suite
+- static analysis
+- documentation checker
+- formatting/style checks
+- generator consistency checks
 
-- class;
-- interface;
-- enum;
-- trait;
-- named function;
-- method, including constructors and private methods;
-- property, including protected/private and promoted properties;
-- constant and enum case.
-
-Each required docblock MUST contain at least one non-empty human-readable
-description line. Tags do not count as description text.
-
-These are CI failures:
-
-- missing docblock;
-- empty docblock;
-- whitespace-only docblock;
-- annotation-only docblock such as `/** @var string */`;
-- a promoted property whose documentation is not visible to the repository
-  documentation checker.
-
-If constructor promotion makes correct property documentation awkward, declare
-the property explicitly instead.
-
-Description prose must explain semantics a third-party developer may need, not
-merely restate the symbol name. Depending on the declaration, cover things such
-as purpose, lifecycle, ownership, scope, units, opacity, invariants, valid and
-invalid states, side effects, ordering, retry semantics, failure modes,
-security/credential sensitivity, and the corresponding plugin-api concept.
-
-The mandatory checker uses AST/parser inspection (`nikic/php-parser`), never
-regex. It proves that description prose exists. Review is responsible for
-rejecting useless prose such as "The ID" or "Gets the value."
-
-New or modified PHP code is not complete until this rule passes.
-
-## Errors and contract violations
-
-Keep ordinary typed lifecycle outcomes, host-capability failures, and
-protocol/contract violations distinct.
-
-A contract/protocol violation must never be quietly converted into a normal
-plugin-authored lifecycle error just to keep execution going.
-
-Validation should fail as close as possible to the violated boundary and
-diagnostics should identify the actual invariant.
-
-## Diagnostic tracing
-
-The 0.4.x runtime must provide opt-in exhaustive tracing to STDERR, never RPC
-STDOUT.
-
-There must be one obvious maximum switch. The preferred spelling is:
-
-`STASHD_PHP_SDK_TRACE=ludicrous`
-
-A smaller level set such as `off|basic|verbose|wire|ludicrous` is welcome if
-useful, but `ludicrous` means "give me essentially everything useful."
-
-When tracing is enabled, make runtime behavior reconstructable: hello
-negotiation, invocation boundaries, frame direction/size/IDs, dispatch,
-re-entrant calls, resource create/borrow/transfer/drop, stream activity, staging
-state, helper start/process identity/event kind and stdout/stderr byte counts,
-cumulative staged stdout activity, cancellation, terminal outcome, returned or
-discarded writer ownership, validation decisions, typed failures, protocol
-failures, elapsed timing, and invocation/process cleanup.
-
-Tracing may be expensive. That is acceptable. Disabled tracing should have
-minimal overhead.
-
-Secrets are NEVER fair game. Always redact credential values, raw secrets,
-Authorization/Cookie-style headers, helper credential environment values, and
-other known secret material, even at maximum tracing.
-
-Large/sensitive bodies should default to metadata such as byte counts, IDs, and
-optional hashes rather than full contents. If a separate raw-payload switch is
-implemented, secret redaction still applies.
-
-Do not impose a hidden SDK log-volume cap. Rotation/storage is an outer runtime
-concern.
-
-## Wire/runtime invariants
-
-Implement plugin-api 0.18 exactly, including its framing, hello negotiation,
-directional frame maxima, exact JSON value mapping, duplicate-object-member
-rejection, invocation IDs, response envelopes, resource ownership/borrowing,
-re-entrant host capability calls, cleanup, byte-stream behavior, byte ranges,
-metadata validation, staging, credentials, Input, Broadcast, Enrichment, and
-Collection Export semantics. `io-host.start-helper` returns a live
-`helper-process`; its optional staged output writer transfers ownership, not a
-borrow. Stdout is streamed as byte events unless staged, in which case live
-cumulative `stdout-activity` replaces stdout byte events. Stderr remains live.
-Accepted events precede one terminal outcome and EOF. Normal exit returns a
-valid writer for finishing; abnormal termination or cleanup discards it.
-Cancellation follows first-terminal-condition-wins; dropping a running process
-must terminate and reap it. Drain pipes independently of event consumption,
-preserve accepted bytes without unbounded PHP memory, and fit each event within
-the negotiated plugin receive-frame maximum. See plugin-api
-`protocol/helper-process.md` and `protocol/helper-process-vectors.json`.
-
-Do not create a PHP-specific RPC dialect.
-
-In particular, do not resurrect:
-
-- top-level RPC `error` responses where canonical RPC uses `result`;
-- base64 encoding for canonical `list<u8>`;
-- fixed private frame ceilings below negotiated limits;
-- non-WIT-qualified lifecycle method aliases;
-- string pseudo-resource handles;
-- Broadcast prepare/finalize;
-- complete inline Broadcast item lists;
-- media-specific universal Input fields/roles;
-- path-based staging as a protocol abstraction.
-
-## Testing and CI
-
-The finished rewrite must have strong CI covering at least:
-
-- Composer validation;
-- formatting/lint;
-- static analysis at the strongest practical level;
-- unit/feature/conformance tests;
-- mandatory PHPDoc-with-description enforcement;
-- plugin-api 0.18 language-neutral vectors/invariants, including live helper
-  events, ownership, cancellation, and frame-sized output;
-- explicit rejection of important 0.3.x wire conventions.
-
-Tests should exercise hostile malformed input as well as happy paths.
-
-A green test suite must mean something stronger than "our PHP objects agree
-with our own mapper."
+Do not fix unrelated failures unless they block the requested work. Report them clearly.
 
 ## Scope discipline
 
-Keep this repository domain-neutral. It owns the PHP authoring/runtime SDK, not
-Stashd Core behavior and not provider behavior.
+Do the requested task.
 
-Do not add YouTube, podcast, document, Jellyfin, Plex, S3, or other provider
-semantics to generic SDK types merely because those domains are useful forcing
-examples.
+Do not turn a focused cleanup into an architecture project.
 
-Do not add future extensibility abstractions without a current contract or
-authoring need.
+Do not add speculative features.
 
-## Working practice
+Do not rewrite unrelated working code merely because you noticed it.
 
-Keep changes coherent and reviewable even when doing a broad bootstrap pass.
+When the requested change exposes obvious dead code or transitional duplication directly adjacent to the work, remove it if doing so is safe and clearly simplifies the result.
 
-Before considering work complete:
+## Before adding code
 
-1. inspect the frozen plugin-api source for the relevant behavior;
-2. run all repository verification commands;
-3. run static analysis;
-4. run formatting/lint checks;
-5. inspect the diff for accidental compatibility fossils and undocumented
-   declarations;
-6. report exactly what was implemented, what remains, and any contract question
-   that could not be resolved from plugin-api.
+Ask:
 
-If the contract appears ambiguous, stop inventing semantics and surface the
-specific ambiguity.
+- Can this be deleted instead?
+- Can native PHP express this?
+- Is this a real Stashd concept or just protocol plumbing?
+- Does the plugin author need to know this exists?
+- Are we creating a second representation of something we already have?
+- Would the first-party plugins actually use this?
+
+Prefer the smallest correct answer.
+
+## Definition of done
+
+A change is complete when:
+
+- contract behaviour remains correct
+- the public API is no more complicated than necessary
+- generated changes come from the generator
+- comments read like normal human documentation
+- examples/starters reflect changed public APIs
+- relevant tests and checks pass
+- no obsolete compatibility layer was left behind without a reason
+
+The goal is not an impressive SDK.
+
+The goal is an SDK that gets out of the plugin author's way.
