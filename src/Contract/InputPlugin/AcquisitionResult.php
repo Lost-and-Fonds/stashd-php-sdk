@@ -7,33 +7,18 @@ namespace Stashd\PluginSdk\Contract\InputPlugin;
 use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 
 /**
- * Immutable input-plugin.acquisition-result contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * Saved outputs and a description of any missing work.
  */
 final readonly class AcquisitionResult
 {
     /**
-     * Canonical artifacts value; retained in contract order without normalization.
-     * @var list<StagedArtifact>
-     */
-    public array $artifacts;
-
-    /**
-     * Canonical outcome value; retained in contract order without normalization.
-     * @var PreservationOutcome
-     */
-    public PreservationOutcome $outcome;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param list<StagedArtifact> $artifacts
-     * @param PreservationOutcome $outcome
+     * Create the acquisition result.
+     *
+     * @param list<StagedArtifact> $artifacts Completed outputs returned for the host to save.
+     * @param PreservationOutcome $outcome Whether all intended work completed, including any known gaps.
      */
     public function __construct(
-        array $artifacts,
-        PreservationOutcome $outcome,
-    ) {
-        $this->artifacts = $artifacts;
-        $this->outcome = $outcome;
-    }
+        public array $artifacts,
+        public PreservationOutcome $outcome,
+    ) {}
 }

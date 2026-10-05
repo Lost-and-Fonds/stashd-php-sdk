@@ -13,7 +13,9 @@ use Stashd\PluginSdk\Helpers;
 final readonly class Acquisition
 {
     /**
-     * Keep the item, caller settings and tools together for acquisition.
+     * Create a request to save one discovered item.
+     *
+     * @param Helpers $helpers Tools and credentials available while saving this item.
      */
     public function __construct(
         /**
@@ -26,14 +28,6 @@ final readonly class Acquisition
         public Source $options,
         private Helpers $helpers,
     ) {}
-
-    /**
-     * Create temporary output to save or hand to a helper.
-     */
-
-    /**
-     * Return tools available while saving the item.
-     */
 
     /**
      * Return credential selectors granted for this acquisition.

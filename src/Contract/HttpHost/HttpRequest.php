@@ -8,60 +8,24 @@ use Stashd\PluginSdk\Contract\IoHost\ByteStream;
 use Stashd\PluginSdk\Contract\IoHost\CredentialReference;
 
 /**
- * Immutable http-host.http-request contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * An HTTP request; sending it transfers ownership of its body stream.
  */
 final readonly class HttpRequest
 {
     /**
-     * Canonical method value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $method;
-
-    /**
-     * Canonical url value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $url;
-
-    /**
-     * Canonical credential value; retained in contract order without normalization.
-     * @var CredentialReference|null
-     */
-    public ?CredentialReference $credential;
-
-    /**
-     * Canonical headers value; retained in contract order without normalization.
-     * @var list<HttpHeader>
-     */
-    public array $headers;
-
-    /**
-     * Canonical body value; retained in contract order without normalization.
-     * @var ByteStream|null
-     */
-    public ?ByteStream $body;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $method
-     * @param string $url
-     * @param CredentialReference|null $credential
-     * @param list<HttpHeader> $headers
-     * @param ByteStream|null $body
+     * Create the http request.
+     *
+     * @param string $method Case-sensitive HTTP method token.
+     * @param string $url Address to request.
+     * @param CredentialReference|null $credential Credential to use; authorization and availability are checked for each request.
+     * @param list<HttpHeader> $headers HTTP headers in order, including repeated names.
+     * @param ByteStream|null $body Request body stream transferred to the host; null when there is no body.
      */
     public function __construct(
-        string $method,
-        string $url,
-        ?CredentialReference $credential,
-        array $headers,
-        ?ByteStream $body,
-    ) {
-        $this->method = $method;
-        $this->url = $url;
-        $this->credential = $credential;
-        $this->headers = $headers;
-        $this->body = $body;
-    }
+        public string $method,
+        public string $url,
+        public ?CredentialReference $credential,
+        public array $headers,
+        public ?ByteStream $body,
+    ) {}
 }

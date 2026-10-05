@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Invocation-scoped io-host.staged-writer capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A staged writer available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface StagedWriter
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical staged-writer.write on this live resource.
+     * Run write on this staged writer.
      * Ordinary host failures are distinct from protocol violations.
      * @param list<int> $bytes
      */
     public function write(array $bytes): void;
 
     /**
-     * Invoke canonical staged-writer.finish on this live resource.
+     * Run finish on this staged writer.
      * Ordinary host failures are distinct from protocol violations.
      * @return StagedArtifact
      */

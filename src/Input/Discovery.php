@@ -14,14 +14,26 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Send discovered items in bounded durable batches, not one large array.
+ * Save discovered items in batches, along with a restart point or final result.
  */
 final class Discovery
 {
+    /**
+     * Whether the host has saved the final batch.
+     */
     private bool $finished = false;
 
     /**
-     * Keep the fixed run request and its commit authority together.
+     * Create a discovery run with its settings and restart state.
+     *
+     * @param Invocation $invocation Connection used to save batches during this call.
+     * @param string $inputId Stable input ID returned when the source was resolved.
+     * @param string $intent Whether to refresh known work or find all items.
+     * @param Source $options Caller-selected settings for this run.
+     * @param string|null $continuation Restart data for unfinished work; null starts a new run.
+     * @param string|null $refreshState Baseline from a completed run; null when none is available.
+     * @param int $maximumItemsPerBatch Positive upper limit on items in one batch.
+     * @param Helpers $helpers Tools and credentials available during this call.
      */
     public function __construct(
         private readonly Invocation $invocation,
@@ -56,7 +68,7 @@ final class Discovery
     }
 
     /**
-     * Atomically save a bounded set of items with a restart point or final outcome.
+     * Save items and their restart point or final result together.
      * @param list<DiscoveredItem> $items
      */
     public function commit(array $items, ?string $continuation = null, ?DiscoveryFinish $finish = null): void

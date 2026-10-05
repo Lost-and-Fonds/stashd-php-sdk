@@ -25,12 +25,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen enrichment-plugin declarations.
+ * Converts JSON values to and from enrichment-plugin declarations.
  */
 final class EnrichmentPluginCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeCapability(mixed $value): Capability
     {
@@ -44,7 +44,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeCapability(Capability $value): stdClass
     {
@@ -56,7 +56,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeConfigurationChoice(mixed $value): ConfigurationChoice
     {
@@ -69,7 +69,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeConfigurationChoice(ConfigurationChoice $value): stdClass
     {
@@ -80,7 +80,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeConfigurationOption(mixed $value): ConfigurationOption
     {
@@ -95,7 +95,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeConfigurationOption(ConfigurationOption $value): stdClass
     {
@@ -108,7 +108,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeConfigurationValue(mixed $value): ConfigurationValue
     {
@@ -121,7 +121,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeConfigurationValue(ConfigurationValue $value): stdClass
     {
@@ -132,7 +132,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDerivedAsset(mixed $value): DerivedAsset
     {
@@ -147,7 +147,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDerivedAsset(DerivedAsset $value): stdClass
     {
@@ -160,7 +160,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeEnrichmentResult(mixed $value): EnrichmentResult
     {
@@ -173,7 +173,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeEnrichmentResult(EnrichmentResult $value): stdClass
     {
@@ -210,7 +210,7 @@ final class EnrichmentPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodePluginError(PluginError $value): stdClass
     {

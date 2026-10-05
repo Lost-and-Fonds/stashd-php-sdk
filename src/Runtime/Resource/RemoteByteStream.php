@@ -23,7 +23,10 @@ final class RemoteByteStream implements ByteStream, OwnedResource
     private bool $eof = false;
 
     /**
-     * Accept ownership of a fully validated host-created stream.
+     * Create a reader for a stream supplied by the host.
+     *
+     * @param Invocation $invocation Active call that owns the stream.
+     * @param string $id Host-issued stream ID.
      */
     public function __construct(
         private readonly Invocation $invocation,

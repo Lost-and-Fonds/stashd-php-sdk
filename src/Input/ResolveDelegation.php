@@ -13,7 +13,9 @@ use Stashd\PluginSdk\Helpers;
 final readonly class ResolveDelegation
 {
     /**
-     * Keep the delegated reference and available helpers together.
+     * Create a request to resolve a handoff from another Input plugin.
+     *
+     * @param Helpers $helpers Tools and credentials available for this handoff.
      */
     public function __construct(
         /**

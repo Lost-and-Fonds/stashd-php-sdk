@@ -41,7 +41,10 @@ final class Invocation
 
     /**
      * Establish the invocation before dispatching author code.
-     * @param list<string> $imports
+     * @param string $id ID of the active call.
+     * @param FrameChannel $channel Connection for host requests and responses.
+     * @param Trace $trace Logger for safe runtime diagnostics.
+     * @param list<string> $imports Host interfaces available during this call.
      */
     public function __construct(
         public readonly string $id,

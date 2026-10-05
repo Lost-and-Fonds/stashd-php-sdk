@@ -14,7 +14,9 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagedArtifact;
 final class Artifact
 {
     /**
-     * Create a readable artifact from finished staged output.
+     * Create a readable artifact from completed output.
+     *
+     * @param RemoteStagedArtifact $artifact Completed output available during this call.
      */
     public function __construct(
         private readonly RemoteStagedArtifact $artifact,

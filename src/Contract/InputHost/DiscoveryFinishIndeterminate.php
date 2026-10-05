@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Canonical indeterminate branch of input-host.discovery-finish.
+ * The indeterminate form of discovery finish.
  */
 final readonly class DiscoveryFinishIndeterminate implements DiscoveryFinish
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var OutcomeDiagnostic
      */
     public OutcomeDiagnostic $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param OutcomeDiagnostic $value
      */
     public function __construct(OutcomeDiagnostic $value)

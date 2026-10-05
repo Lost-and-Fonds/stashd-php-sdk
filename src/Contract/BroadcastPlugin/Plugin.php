@@ -7,13 +7,12 @@ namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 
 /**
- * Typed author lifecycle surface for broadcast-plugin.
- * Values are independent of JSON framing and host process reuse.
+ * Internal broadcast-plugin methods used by the runtime.
  */
 interface Plugin
 {
     /**
-     * Execute canonical publish using current invocation values only.
+     * Run publish with the supplied values.
      * @param PublishRequest $request
      * @param DestinationConfiguration $configuration
      * @param list<CredentialBinding> $credentials
@@ -22,7 +21,7 @@ interface Plugin
     public function publish(PublishRequest $request, DestinationConfiguration $configuration, array $credentials): Publication|PluginError;
 
     /**
-     * Execute canonical operation using current invocation values only.
+     * Run operation with the supplied values.
      * @param OperationRequest $request
      * @param list<CredentialBinding> $credentials
      * @return OperationResult|PluginError

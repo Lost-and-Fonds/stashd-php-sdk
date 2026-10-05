@@ -7,18 +7,18 @@ namespace Stashd\PluginSdk\Contract\EnrichmentPlugin;
 use Stashd\PluginSdk\Contract\PluginTypes\PluginErrorDetail;
 
 /**
- * Canonical not-found branch of enrichment-plugin.plugin-error.
+ * The not found form of plugin error.
  */
 final readonly class PluginErrorNotFound implements PluginError
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var PluginErrorDetail
      */
     public PluginErrorDetail $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param PluginErrorDetail $value
      */
     public function __construct(PluginErrorDetail $value)

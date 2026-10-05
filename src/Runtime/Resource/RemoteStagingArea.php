@@ -16,7 +16,10 @@ use stdClass;
 final class RemoteStagingArea implements OwnedResource
 {
     /**
-     * Bind a host-created staging area to its active invocation.
+     * Create a staging area for the active call.
+     *
+     * @param Invocation $invocation Active call that owns the staging area.
+     * @param string $id Host-issued staging area ID.
      */
     public function __construct(
         private readonly Invocation $invocation,

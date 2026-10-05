@@ -26,12 +26,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen collection-export-plugin declarations.
+ * Converts JSON values to and from collection-export-plugin declarations.
  */
 final class CollectionExportPluginCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeCollection(mixed $value): Collection
     {
@@ -44,7 +44,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeCollection(Collection $value): stdClass
     {
@@ -55,7 +55,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeCollectionEntry(mixed $value): CollectionEntry
     {
@@ -68,7 +68,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeCollectionEntry(CollectionEntry $value): stdClass
     {
@@ -79,7 +79,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeExportedArtifact(mixed $value): ExportedArtifact
     {
@@ -93,7 +93,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeExportedArtifact(ExportedArtifact $value): stdClass
     {
@@ -105,7 +105,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeSetting(mixed $value): Setting
     {
@@ -118,7 +118,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeSetting(Setting $value): stdClass
     {
@@ -150,7 +150,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeOptionValue(OptionValue $value): stdClass
     {
@@ -189,7 +189,7 @@ final class CollectionExportPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodePluginError(PluginError $value): stdClass
     {

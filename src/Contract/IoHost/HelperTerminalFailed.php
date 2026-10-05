@@ -16,7 +16,7 @@ final readonly class HelperTerminalFailed implements HelperTerminal
     public string $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param string $value
      */
     public function __construct(string $value)

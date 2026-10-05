@@ -5,6 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Typed union of the canonical io-host.stream-error cases.
+ * Possible stream error values.
  */
 interface StreamError {}

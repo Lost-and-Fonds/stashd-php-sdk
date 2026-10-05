@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\CollectionExport;
 
 /**
- * Bounded inline interchange input; encoded transport size is checked separately by RPC framing.
+ * A titled collection of entries to export.
  */
 final readonly class Collection
 {
     /**
-     * Build a typed ordered collection without inventing a universal cardinality ceiling.
+     * Create a collection, keeping entries in the supplied order.
      */
     public function __construct(
         /**
-         * Optional collection presentation title, not a durable identifier.
+         * Display title when supplied; not an identifier.
          */
         public ?string $title,
         Entry ...$entries,
@@ -23,7 +23,7 @@ final readonly class Collection
     }
 
     /**
-     * Ordered generic entries; an empty collection is valid.
+     * Entries in export order; the collection may be empty.
      * @var list<Entry>
      */
     public array $entries;

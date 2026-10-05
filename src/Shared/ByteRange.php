@@ -13,7 +13,10 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 final readonly class ByteRange
 {
     /**
-     * Set a zero-based starting offset and optional byte count.
+     * Select a starting byte and an optional number of bytes to read.
+     *
+     * @param int $offset Nonnegative byte offset from the start of the file.
+     * @param int|null $length Nonnegative byte count; null reads to the end.
      */
     public function __construct(
         public int $offset,

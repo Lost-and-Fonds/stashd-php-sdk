@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Canonical more branch of input-host.discovery-progress.
+ * The more form of discovery progress.
  */
 final readonly class DiscoveryProgressMore implements DiscoveryProgress
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var DiscoveryContinuation
      */
     public DiscoveryContinuation $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param DiscoveryContinuation $value
      */
     public function __construct(DiscoveryContinuation $value)

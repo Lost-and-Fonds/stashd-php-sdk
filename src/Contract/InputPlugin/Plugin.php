@@ -9,13 +9,12 @@ use Stashd\PluginSdk\Contract\InputHost\InputDelegation;
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 
 /**
- * Typed author lifecycle surface for input-plugin.
- * Values are independent of JSON framing and host process reuse.
+ * Internal input-plugin methods used by the runtime.
  */
 interface Plugin
 {
     /**
-     * Execute canonical resolve using current invocation values only.
+     * Run resolve with the supplied values.
      * @param list<SourceValue> $source
      * @param list<CredentialBinding> $credentials
      * @return ResolvedInput|PluginError
@@ -23,7 +22,7 @@ interface Plugin
     public function resolve(array $source, array $credentials): ResolvedInput|PluginError;
 
     /**
-     * Execute canonical resolve-delegation using current invocation values only.
+     * Run resolve delegation with the supplied values.
      * @param InputDelegation $delegation
      * @param list<CredentialBinding> $credentials
      * @return ResolvedInput|PluginError
@@ -31,7 +30,7 @@ interface Plugin
     public function resolveDelegation(InputDelegation $delegation, array $credentials): ResolvedInput|PluginError;
 
     /**
-     * Execute canonical discover using current invocation values only.
+     * Run discover with the supplied values.
      * @param DiscoveryRequest $request
      * @param list<CredentialBinding> $credentials
      * @return null|PluginError
@@ -39,7 +38,7 @@ interface Plugin
     public function discover(DiscoveryRequest $request, array $credentials): ?PluginError;
 
     /**
-     * Execute canonical acquire using current invocation values only.
+     * Run acquire with the supplied values.
      * @param DiscoveredItem $item
      * @param AcquisitionOptions $options
      * @return AcquisitionResult|PluginError

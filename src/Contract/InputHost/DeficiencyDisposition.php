@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Closed canonical cases for input-host.deficiency-disposition; spelling is protocol identity.
+ * Available deficiency disposition values.
  */
 enum DeficiencyDisposition: string
 {

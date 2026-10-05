@@ -22,7 +22,8 @@ final class Helpers
 {
     /**
      * Create the helper API for one plugin call.
-     * @param list<Credential> $credentials
+     * @param Invocation $invocation Active call used to start helpers and create output.
+     * @param list<Credential> $credentials Credentials available for this call.
      */
     public function __construct(
         private readonly Invocation $invocation,

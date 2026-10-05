@@ -30,12 +30,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen io-host declarations.
+ * Converts JSON values to and from io-host declarations.
  */
 final class IoHostCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeCredentialBinding(mixed $value): CredentialBinding
     {
@@ -48,7 +48,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeCredentialBinding(CredentialBinding $value): stdClass
     {
@@ -59,7 +59,7 @@ final class IoHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeCredentialReference(mixed $value): CredentialReference
     {
@@ -71,7 +71,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeCredentialReference(CredentialReference $value): stdClass
     {
@@ -81,7 +81,7 @@ final class IoHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeHelperOutput(mixed $value): HelperOutput
     {
@@ -94,7 +94,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeHelperOutput(HelperOutput $value): stdClass
     {
@@ -105,7 +105,7 @@ final class IoHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodePluginMetadata(mixed $value): PluginMetadata
     {
@@ -118,7 +118,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodePluginMetadata(PluginMetadata $value): stdClass
     {
@@ -129,7 +129,7 @@ final class IoHostCodec
     }
 
     /**
-     * Decode a saved file and reject sizes that PHP cannot represent.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodePreservedAsset(mixed $value): PreservedAsset
     {
@@ -150,7 +150,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodePreservedAsset(PreservedAsset $value): stdClass
     {
@@ -164,7 +164,7 @@ final class IoHostCodec
     }
 
     /**
-     * Decode a staged output and reject sizes that PHP cannot represent.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeStagedArtifact(mixed $value): StagedArtifact
     {
@@ -184,7 +184,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeStagedArtifact(StagedArtifact $value): stdClass
     {
@@ -197,7 +197,7 @@ final class IoHostCodec
     }
 
     /**
-     * Decode only a declared canonical enum spelling.
+     * Read a supported enum value.
      */
     public static function decodeHelperOutputStream(mixed $value): HelperOutputStream
     {
@@ -205,7 +205,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode the exact protocol identity of this enum case.
+     * Write the enum value expected by the host.
      */
     public static function encodeHelperOutputStream(HelperOutputStream $value): string
     {
@@ -237,7 +237,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeHelperError(HelperError $value): string|stdClass
     {
@@ -273,7 +273,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeStagingError(StagingError $value): string|stdClass
     {
@@ -306,7 +306,7 @@ final class IoHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeStreamError(StreamError $value): string|stdClass
     {

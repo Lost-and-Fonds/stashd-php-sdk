@@ -11,8 +11,8 @@ final readonly class ActionResult
 {
     /**
      * Create the operation result.
-     * @param list<Choice> $choices
-     * @param list<Setting> $values
+     * @param list<Choice> $choices Choices to show the caller.
+     * @param list<Setting> $values Destination setting values to update.
      */
     public function __construct(
         /**

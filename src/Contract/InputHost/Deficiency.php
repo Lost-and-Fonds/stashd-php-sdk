@@ -5,33 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Immutable input-host.deficiency contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * A known gap in the saved result and whether retrying may fill it.
  */
 final readonly class Deficiency
 {
     /**
-     * Canonical disposition value; retained in contract order without normalization.
-     * @var DeficiencyDisposition
-     */
-    public DeficiencyDisposition $disposition;
-
-    /**
-     * Canonical diagnostic value; retained in contract order without normalization.
-     * @var OutcomeDiagnostic
-     */
-    public OutcomeDiagnostic $diagnostic;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param DeficiencyDisposition $disposition
-     * @param OutcomeDiagnostic $diagnostic
+     * Create the deficiency.
+     *
+     * @param DeficiencyDisposition $disposition Whether later work may fill this gap.
+     * @param OutcomeDiagnostic $diagnostic Explanation of the missing work.
      */
     public function __construct(
-        DeficiencyDisposition $disposition,
-        OutcomeDiagnostic $diagnostic,
-    ) {
-        $this->disposition = $disposition;
-        $this->diagnostic = $diagnostic;
-    }
+        public DeficiencyDisposition $disposition,
+        public OutcomeDiagnostic $diagnostic,
+    ) {}
 }

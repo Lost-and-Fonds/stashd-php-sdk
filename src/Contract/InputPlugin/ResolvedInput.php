@@ -7,69 +7,26 @@ namespace Stashd\PluginSdk\Contract\InputPlugin;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 
 /**
- * Immutable input-plugin.resolved-input contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * An identified source that can be searched in a later call.
  */
 final readonly class ResolvedInput
 {
     /**
-     * Canonical id value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $id;
-
-    /**
-     * Canonical canonical-reference value; retained in contract order without normalization.
-     * @var string|null
-     */
-    public ?string $canonicalReference;
-
-    /**
-     * Canonical estimated-item-count value; retained in contract order without normalization.
-     * @var int|null
-     */
-    public ?int $estimatedItemCount;
-
-    /**
-     * Canonical size-bytes value; retained in contract order without normalization.
-     * @var string|null
-     */
-    public ?string $sizeBytes;
-
-    /**
-     * Canonical size-estimated value; retained in contract order without normalization.
-     * @var bool
-     */
-    public bool $sizeEstimated;
-
-    /**
-     * Canonical metadata value; retained in contract order without normalization.
-     * @var list<PluginMetadata>
-     */
-    public array $metadata;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $id
-     * @param string|null $canonicalReference
-     * @param int|null $estimatedItemCount
-     * @param string|null $sizeBytes
-     * @param bool $sizeEstimated
-     * @param list<PluginMetadata> $metadata
+     * Create the resolved input.
+     *
+     * @param string $id Stable identifier used in later calls.
+     * @param string|null $canonicalReference Opaque source reference that remains usable across calls; null when absent.
+     * @param int|null $estimatedItemCount Estimated number of items; null when unknown.
+     * @param string|null $sizeBytes Optional known or estimated total input size in bytes.
+     * @param bool $sizeEstimated Whether the supplied size is an estimate.
+     * @param list<PluginMetadata> $metadata Metadata facets supplied by the plugin.
      */
     public function __construct(
-        string $id,
-        ?string $canonicalReference,
-        ?int $estimatedItemCount,
-        ?string $sizeBytes,
-        bool $sizeEstimated,
-        array $metadata,
-    ) {
-        $this->id = $id;
-        $this->canonicalReference = $canonicalReference;
-        $this->estimatedItemCount = $estimatedItemCount;
-        $this->sizeBytes = $sizeBytes;
-        $this->sizeEstimated = $sizeEstimated;
-        $this->metadata = $metadata;
-    }
+        public string $id,
+        public ?string $canonicalReference,
+        public ?int $estimatedItemCount,
+        public ?string $sizeBytes,
+        public bool $sizeEstimated,
+        public array $metadata,
+    ) {}
 }

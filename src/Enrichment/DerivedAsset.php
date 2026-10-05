@@ -13,7 +13,7 @@ final readonly class DerivedAsset
 {
     /**
      * Describe the new file and its source files.
-     * @param list<string> $derivedFrom
+     * @param list<string> $derivedFrom IDs of saved files used to create this one.
      */
     public function __construct(
         /**

@@ -37,12 +37,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen input-plugin declarations.
+ * Converts JSON values to and from input-plugin declarations.
  */
 final class InputPluginCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeAcquisitionOptions(mixed $value): AcquisitionOptions
     {
@@ -55,7 +55,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeAcquisitionOptions(AcquisitionOptions $value): stdClass
     {
@@ -66,7 +66,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeAcquisitionResult(mixed $value): AcquisitionResult
     {
@@ -79,7 +79,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeAcquisitionResult(AcquisitionResult $value): stdClass
     {
@@ -90,7 +90,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDiscoveryRequest(mixed $value): DiscoveryRequest
     {
@@ -107,7 +107,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDiscoveryRequest(DiscoveryRequest $value): stdClass
     {
@@ -122,7 +122,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeInputOption(mixed $value): InputOption
     {
@@ -135,7 +135,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeInputOption(InputOption $value): stdClass
     {
@@ -146,7 +146,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeResolvedInput(mixed $value): ResolvedInput
     {
@@ -163,7 +163,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeResolvedInput(ResolvedInput $value): stdClass
     {
@@ -178,7 +178,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeSourceValue(mixed $value): SourceValue
     {
@@ -191,7 +191,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeSourceValue(SourceValue $value): stdClass
     {
@@ -202,7 +202,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Decode only a declared canonical enum spelling.
+     * Read a supported enum value.
      */
     public static function decodeDiscoveryIntent(mixed $value): DiscoveryIntent
     {
@@ -210,7 +210,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode the exact protocol identity of this enum case.
+     * Write the enum value expected by the host.
      */
     public static function encodeDiscoveryIntent(DiscoveryIntent $value): string
     {
@@ -239,7 +239,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeOptionValue(OptionValue $value): stdClass
     {
@@ -279,7 +279,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodePluginError(PluginError $value): stdClass
     {
@@ -318,7 +318,7 @@ final class InputPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodePreservationOutcome(PreservationOutcome $value): string|stdClass
     {

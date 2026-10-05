@@ -5,6 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Canonical rejected branch of input-host.discovery-commit-error.
+ * The rejected form of discovery commit error.
  */
 final readonly class DiscoveryCommitErrorRejected implements DiscoveryCommitError {}

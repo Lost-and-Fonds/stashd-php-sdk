@@ -24,11 +24,20 @@ use stdClass;
  */
 final class Publish
 {
+    /**
+     * Whether all selected items have been read.
+     */
     private bool $eof = false;
 
     /**
-     * Keep the selected collection and reporter bound to this publication.
-     * @param list<Setting> $settings
+     * Create a publication request with its collection and file reporter.
+     *
+     * @param Invocation $invocation Active call used to read items and report files.
+     * @param OwnedResource $collection Selected collection supplied by the host.
+     * @param OwnedResource $reporter Reporter for the files produced by publication.
+     * @param int $maximumReportRecordsPerBatch Positive upper limit on file reports per batch.
+     * @param list<Setting> $settings Caller-selected destination settings.
+     * @param Helpers $helpers Tools and credentials available during this call.
      */
     public function __construct(
         private readonly Invocation $invocation,
@@ -44,7 +53,7 @@ final class Publish
     }
 
     /**
-     * Yield selected items in bounded batches. Order is not a domain ordering.
+     * Read selected items in batches. Their order does not imply a sort order.
      * @return Generator<int, Item>
      */
     public function items(int $batchSize = 32): Generator

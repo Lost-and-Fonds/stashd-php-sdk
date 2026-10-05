@@ -7,69 +7,26 @@ namespace Stashd\PluginSdk\Contract\InputHost;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 
 /**
- * Immutable input-host.discovered-item contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * An item the plugin can later retrieve using its stable ID and opaque reference.
  */
 final readonly class DiscoveredItem
 {
     /**
-     * Canonical id value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $id;
-
-    /**
-     * Canonical reference value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $reference;
-
-    /**
-     * Canonical delegation value; retained in contract order without normalization.
-     * @var InputDelegation|null
-     */
-    public ?InputDelegation $delegation;
-
-    /**
-     * Canonical size-bytes value; retained in contract order without normalization.
-     * @var string|null
-     */
-    public ?string $sizeBytes;
-
-    /**
-     * Canonical size-estimated value; retained in contract order without normalization.
-     * @var bool
-     */
-    public bool $sizeEstimated;
-
-    /**
-     * Canonical metadata value; retained in contract order without normalization.
-     * @var list<PluginMetadata>
-     */
-    public array $metadata;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $id
-     * @param string $reference
-     * @param InputDelegation|null $delegation
-     * @param string|null $sizeBytes
-     * @param bool $sizeEstimated
-     * @param list<PluginMetadata> $metadata
+     * Create the discovered item.
+     *
+     * @param string $id Stable item identity used when the host requests acquisition.
+     * @param string $reference Opaque value the plugin uses to retrieve the item; preserved exactly.
+     * @param InputDelegation|null $delegation Optional opaque handoff reference for another Input plugin.
+     * @param string|null $sizeBytes Optional known or estimated total item size in bytes.
+     * @param bool $sizeEstimated Whether the supplied item size is an estimate.
+     * @param list<PluginMetadata> $metadata Plugin-owned metadata facets associated with this item.
      */
     public function __construct(
-        string $id,
-        string $reference,
-        ?InputDelegation $delegation,
-        ?string $sizeBytes,
-        bool $sizeEstimated,
-        array $metadata,
-    ) {
-        $this->id = $id;
-        $this->reference = $reference;
-        $this->delegation = $delegation;
-        $this->sizeBytes = $sizeBytes;
-        $this->sizeEstimated = $sizeEstimated;
-        $this->metadata = $metadata;
-    }
+        public string $id,
+        public string $reference,
+        public ?InputDelegation $delegation,
+        public ?string $sizeBytes,
+        public bool $sizeEstimated,
+        public array $metadata,
+    ) {}
 }

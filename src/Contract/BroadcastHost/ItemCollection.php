@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\BroadcastHost;
 
 /**
- * Invocation-scoped broadcast-host.item-collection capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A item collection available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface ItemCollection
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical item-collection.next on this live resource.
+     * Run next on this item collection.
      * Ordinary host failures are distinct from protocol violations.
      * @param int $maxItems
      * @return list<Item>|null

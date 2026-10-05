@@ -5,6 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Canonical denied branch of io-host.stream-error.
+ * The denied form of stream error.
  */
 final readonly class StreamErrorDenied implements StreamError {}

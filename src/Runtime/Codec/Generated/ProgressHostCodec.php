@@ -9,12 +9,12 @@ use Stashd\PluginSdk\Runtime\Codec\Values;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen progress-host declarations.
+ * Converts JSON values to and from progress-host declarations.
  */
 final class ProgressHostCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeProgress(mixed $value): Progress
     {
@@ -27,7 +27,7 @@ final class ProgressHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeProgress(Progress $value): stdClass
     {

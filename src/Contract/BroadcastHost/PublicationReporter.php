@@ -7,25 +7,25 @@ namespace Stashd\PluginSdk\Contract\BroadcastHost;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 
 /**
- * Invocation-scoped broadcast-host.publication-reporter capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A publication reporter available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface PublicationReporter
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical publication-reporter.report-files on this live resource.
+     * Run report files on this publication reporter.
      * Ordinary host failures are distinct from protocol violations.
      * @param list<PublishedFile> $files
      */
     public function reportFiles(array $files): void;
 
     /**
-     * Invoke canonical publication-reporter.report-destination-metadata on this live resource.
+     * Run report destination metadata on this publication reporter.
      * Ordinary host failures are distinct from protocol violations.
      * @param list<PluginMetadata> $metadata
      */

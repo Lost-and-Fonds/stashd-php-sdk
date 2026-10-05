@@ -38,10 +38,17 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
      * True after the first canonical post-terminal EOF result.
      */
     private bool $eof = false;
+    /**
+     * Whether stdout is written to staged output instead of streamed as bytes.
+     */
     private readonly bool $staged;
 
     /**
-     * Bind a host-owned process already installed in this invocation's ledger.
+     * Create a process wrapper for the active call.
+     *
+     * @param Invocation $invocation Active call that owns the process.
+     * @param string $id Host-issued process ID.
+     * @param string|null $writerId Transferred stdout writer ID; null for streamed stdout.
      */
     public function __construct(
         private readonly Invocation $invocation,

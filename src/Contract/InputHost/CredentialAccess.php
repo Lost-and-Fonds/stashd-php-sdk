@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Invocation-scoped input-host.credential-access capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A credential access available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface CredentialAccess
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical credential-access.read on this live resource.
+     * Run read on this credential access.
      * Ordinary host failures are distinct from protocol violations.
      * @return string
      */

@@ -5,42 +5,20 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
 
 /**
- * Immutable broadcast-plugin.operation-request contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * A named operation and the values it needs.
  */
 final readonly class OperationRequest
 {
     /**
-     * Canonical name value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $name;
-
-    /**
-     * Canonical settings value; retained in contract order without normalization.
-     * @var list<Setting>
-     */
-    public array $settings;
-
-    /**
-     * Canonical payload value; retained in contract order without normalization.
-     * @var list<Setting>
-     */
-    public array $payload;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $name
-     * @param list<Setting> $settings
-     * @param list<Setting> $payload
+     * Create the operation request.
+     *
+     * @param string $name Name used to select this entry.
+     * @param list<Setting> $settings Configuration values for this operation.
+     * @param list<Setting> $payload Additional data for the selected operation.
      */
     public function __construct(
-        string $name,
-        array $settings,
-        array $payload,
-    ) {
-        $this->name = $name;
-        $this->settings = $settings;
-        $this->payload = $payload;
-    }
+        public string $name,
+        public array $settings,
+        public array $payload,
+    ) {}
 }

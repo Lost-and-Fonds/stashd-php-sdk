@@ -23,7 +23,10 @@ use stdClass;
 final readonly class Request
 {
     /**
-     * Keep selected work, caller options, and available tools together.
+     * Create a request to enrich the selected item.
+     *
+     * @param Helpers $helpers Tools and credentials available during this call.
+     * @param Invocation $invocation Active call used to read the supplied assets.
      * @param list<Selection> $configuration
      */
     public function __construct(
@@ -48,10 +51,6 @@ final readonly class Request
     ) {}
 
     /**
-     * Create temporary output or run an allowed helper.
-     */
-
-    /**
      * Return helper and staging tools.
      */
     public function helpers(): Helpers
@@ -68,9 +67,6 @@ final readonly class Request
         return $this->helpers->credentials();
     }
 
-    /**
-     * Open one Asset granted with this item, optionally reading a byte range.
-     */
     /**
      * Open a saved file at an optional byte offset and length.
      */

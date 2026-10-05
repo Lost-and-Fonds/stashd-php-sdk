@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Invocation-scoped io-host.byte-stream capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A byte stream available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface ByteStream
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical byte-stream.read on this live resource.
+     * Run read on this byte stream.
      * Ordinary host failures are distinct from protocol violations.
      * @return list<int>|null
      */

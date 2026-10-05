@@ -20,7 +20,10 @@ use stdClass;
 final class RemoteStagedWriter implements StagedWriter, OwnedResource
 {
     /**
-     * Bind a writer already installed in the invocation ledger.
+     * Create a writer for output registered with the active call.
+     *
+     * @param Invocation $invocation Active call that owns the writer.
+     * @param string $id Host-issued writer ID.
      */
     public function __construct(
         private readonly Invocation $invocation,

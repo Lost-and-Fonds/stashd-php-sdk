@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\HttpHost;
 
 /**
- * Invocation-scoped http-host.http-client capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A http client available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface HttpClient
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical http-client.request on this live resource.
+     * Run request on this http client.
      * Ordinary host failures are distinct from protocol violations.
      * @param HttpRequest $request
      * @return HttpResponse

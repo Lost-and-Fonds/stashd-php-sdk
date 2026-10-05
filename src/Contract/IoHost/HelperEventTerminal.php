@@ -16,7 +16,7 @@ final readonly class HelperEventTerminal implements HelperEvent
     public HelperTerminal $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param HelperTerminal $value
      */
     public function __construct(HelperTerminal $value)

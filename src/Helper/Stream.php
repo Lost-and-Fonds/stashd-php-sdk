@@ -13,7 +13,9 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 final class Stream
 {
     /**
-     * Create helper input from a host-provided stream.
+     * Create helper input from a supplied stream.
+     *
+     * @param RemoteByteStream $stream Readable bytes available during this call.
      */
     public function __construct(private readonly RemoteByteStream $stream) {}
 

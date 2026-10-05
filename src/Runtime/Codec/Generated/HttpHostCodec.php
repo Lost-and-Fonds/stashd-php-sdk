@@ -18,12 +18,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen http-host declarations.
+ * Converts JSON values to and from http-host declarations.
  */
 final class HttpHostCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeHttpHeader(mixed $value): HttpHeader
     {
@@ -36,7 +36,7 @@ final class HttpHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeHttpHeader(HttpHeader $value): stdClass
     {
@@ -72,7 +72,7 @@ final class HttpHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeHttpError(HttpError $value): string|stdClass
     {

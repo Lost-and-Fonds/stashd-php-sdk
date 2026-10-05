@@ -16,7 +16,7 @@ final readonly class HelperEventOutput implements HelperEvent
     public HelperOutput $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param HelperOutput $value
      */
     public function __construct(HelperOutput $value)

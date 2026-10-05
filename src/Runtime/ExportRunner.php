@@ -22,7 +22,10 @@ use Throwable;
 final class ExportRunner
 {
     /**
-     * Bind transport and diagnostics for process use or an in-memory host test.
+     * Create a runner with a connection and diagnostic logger.
+     *
+     * @param FrameChannel $channel Connection used to receive calls and send results.
+     * @param Trace $trace Logger for safe runtime diagnostics.
      */
     public function __construct(
         private readonly FrameChannel $channel,

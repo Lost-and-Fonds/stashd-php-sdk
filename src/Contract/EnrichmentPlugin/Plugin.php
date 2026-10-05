@@ -8,20 +8,19 @@ use Stashd\PluginSdk\Contract\EnrichmentHost\ItemContext;
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 
 /**
- * Typed author lifecycle surface for enrichment-plugin.
- * Values are independent of JSON framing and host process reuse.
+ * Internal enrichment-plugin methods used by the runtime.
  */
 interface Plugin
 {
     /**
-     * Execute canonical capabilities using current invocation values only.
+     * Run capabilities with the supplied values.
      * @param ItemContext $context
      * @return list<Capability>
      */
     public function capabilities(ItemContext $context): array;
 
     /**
-     * Execute canonical enrich using current invocation values only.
+     * Run enrich with the supplied values.
      * @param ItemContext $context
      * @param string $capabilityId
      * @param string $capabilityRevision

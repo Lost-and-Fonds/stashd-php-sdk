@@ -5,24 +5,16 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Immutable input-host.discovery-refresh-state contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * A baseline shared between successfully completed discovery runs.
  */
 final readonly class DiscoveryRefreshState
 {
     /**
-     * Canonical value value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $value;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $value
+     * Create the discovery refresh state.
+     *
+     * @param string $value Plugin-owned baseline from a successfully completed run.
      */
     public function __construct(
-        string $value,
-    ) {
-        $this->value = $value;
-    }
+        public string $value,
+    ) {}
 }

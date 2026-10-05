@@ -23,7 +23,9 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 final class Process
 {
     /**
-     * Create the public wrapper around a running helper.
+     * Create a process to read helper output and control its execution.
+     *
+     * @param RemoteHelperProcess $process Running helper supplied for this call.
      */
     public function __construct(private readonly RemoteHelperProcess $process) {}
 

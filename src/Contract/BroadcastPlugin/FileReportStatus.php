@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
 
 /**
- * Closed canonical cases for broadcast-plugin.file-report-status; spelling is protocol identity.
+ * Available file report status values.
  */
 enum FileReportStatus: string
 {

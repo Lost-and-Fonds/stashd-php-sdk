@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
 
 /**
- * Canonical boolean branch of broadcast-plugin.option-value.
+ * The boolean form of option value.
  */
 final readonly class OptionValueBoolean implements OptionValue
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var bool
      */
     public bool $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param bool $value
      */
     public function __construct(bool $value)

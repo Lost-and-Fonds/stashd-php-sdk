@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Invocation-scoped live host process; drop terminates and reaps a running child.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A running helper, available during this call; closing it stops and reaps the child.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface HelperProcess
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
@@ -23,7 +23,7 @@ interface HelperProcess
     public function nextEvent(): ?HelperEvent;
 
     /**
-     * Request idempotent cancellation; the first determined terminal condition wins.
+     * Request cancellation; repeated requests do nothing, and an earlier outcome takes priority.
      * Ordinary host failures are distinct from protocol violations.
      * @return null
      */

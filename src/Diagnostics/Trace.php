@@ -11,6 +11,9 @@ use InvalidArgumentException;
  */
 final class Trace
 {
+    /**
+     * Monotonic start time in nanoseconds for elapsed timings.
+     */
     private readonly int $started;
 
     /**
@@ -20,8 +23,9 @@ final class Trace
     private $sink;
 
     /**
-     * Bind a safe diagnostics sink; stdout aliases are rejected even at maximum verbosity.
-     * @param resource $sink
+     * Create a diagnostic logger; stdout cannot be used as its output.
+     * @param TraceLevel $level Detail level to include in diagnostic output.
+     * @param resource $sink Stream for diagnostics, never standard output.
      */
     public function __construct(
         private readonly TraceLevel $level,

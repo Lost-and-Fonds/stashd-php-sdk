@@ -14,12 +14,12 @@ use Stashd\PluginSdk\Runtime\Codec\Scalar;
 final readonly class Unsigned64
 {
     /**
-     * Canonical decimal magnitude, never rounded through a floating-point value.
+     * Decimal digits representing the quantity without rounding.
      */
     public string $decimal;
 
     /**
-     * Accept a canonical decimal quantity without trimming or numeric coercion.
+     * Create a quantity from decimal digits with no spaces or leading zeroes, except zero itself.
      */
     public function __construct(string $decimal)
     {

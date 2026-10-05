@@ -12,7 +12,7 @@ use Stashd\PluginSdk\Helper\Artifact;
 final readonly class Publication
 {
     /**
-     * Describe the publication result without adding a finalize phase.
+     * Create a publication result with optional local output.
      * @param Artifact|null $artifact The finished local output, or null for remote-only publication.
      * @param bool $filesComplete Whether all applicable destination files were reported.
      */

@@ -5,6 +5,6 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Canonical credential-denied branch of io-host.helper-error.
+ * The credential denied form of helper error.
  */
 final readonly class HelperErrorCredentialDenied implements HelperError {}

@@ -7,7 +7,7 @@ namespace Stashd\PluginSdk\Input;
 use InvalidArgumentException;
 
 /**
- * One reason an otherwise coherent discovery or acquisition is incomplete.
+ * A reason why finding or saving items was incomplete.
  */
 final readonly class Deficiency
 {

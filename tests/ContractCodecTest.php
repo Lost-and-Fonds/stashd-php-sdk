@@ -10,6 +10,35 @@ use Stashd\PluginSdk\Runtime\Codec\Generated\InputPluginCodec;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\Json;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
+use Stashd\PluginSdk\Tooling\DocumentationChecker;
+
+it('generates readonly records with documented promoted properties in schema order', function (): void {
+    $schema = json_decode(file_get_contents(__DIR__ . '/../resources/contract/wit-schema.json'), true, flags: JSON_THROW_ON_ERROR);
+    $checker = new DocumentationChecker();
+    $className = static fn(string $name): string => str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));
+
+    foreach ($schema['contracts'] as $contract) {
+        foreach ($contract['interfaces'] as $interface => $definition) {
+            foreach ($definition['records'] as $name => $record) {
+                $reflection = new ReflectionClass('Stashd\\PluginSdk\\Contract\\' . $className($interface) . '\\' . $className($name));
+                $constructor = $reflection->getConstructor();
+                $parameters = $constructor->getParameters();
+                $expected = array_map(static fn(array $field): string => lcfirst($className($field['name'])), $record['fields']);
+                $filename = $reflection->getFileName();
+
+                expect($reflection->isReadOnly())->toBeTrue()
+                    ->and(array_map(static fn(ReflectionParameter $parameter): string => $parameter->getName(), $parameters))->toBe($expected)
+                    ->and($checker->check(file_get_contents($filename), $filename))->toBe([]);
+
+                foreach ($parameters as $parameter) {
+                    expect($parameter->isPromoted())->toBeTrue()
+                        ->and($reflection->getProperty($parameter->getName())->isReadOnly())->toBeTrue()
+                        ->and($reflection->getProperty($parameter->getName())->getType()->__toString())->toBe($parameter->getType()->__toString());
+                }
+            }
+        }
+    }
+});
 
 it('rejects contract byte counts that PHP cannot represent in author values', function (): void {
     $value = Json::decode('{"reference":"opaque-stage-1","media-type":null,"size-bytes":"18446744073709551615","metadata":[]}');

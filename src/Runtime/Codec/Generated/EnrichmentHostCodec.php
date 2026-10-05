@@ -16,12 +16,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen enrichment-host declarations.
+ * Converts JSON values to and from enrichment-host declarations.
  */
 final class EnrichmentHostCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeItemContext(mixed $value): ItemContext
     {
@@ -35,7 +35,7 @@ final class EnrichmentHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeItemContext(ItemContext $value): stdClass
     {
@@ -68,7 +68,7 @@ final class EnrichmentHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeAssetError(AssetError $value): string|stdClass
     {

@@ -5,33 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Immutable input-host.discovery-batch contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * Items to save together with a discovery checkpoint.
  */
 final readonly class DiscoveryBatch
 {
     /**
-     * Canonical items value; retained in contract order without normalization.
-     * @var list<DiscoveredItem>
-     */
-    public array $items;
-
-    /**
-     * Canonical progress value; retained in contract order without normalization.
-     * @var DiscoveryProgress
-     */
-    public DiscoveryProgress $progress;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param list<DiscoveredItem> $items
-     * @param DiscoveryProgress $progress
+     * Create the discovery batch.
+     *
+     * @param list<DiscoveredItem> $items Items included in this batch, in order.
+     * @param DiscoveryProgress $progress Checkpoint or completion result saved together with these items.
      */
     public function __construct(
-        array $items,
-        DiscoveryProgress $progress,
-    ) {
-        $this->items = $items;
-        $this->progress = $progress;
-    }
+        public array $items,
+        public DiscoveryProgress $progress,
+    ) {}
 }

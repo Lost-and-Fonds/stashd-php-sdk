@@ -9,20 +9,20 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Structurally validated plugin-owned facet; schema semantics and secret exclusion belong to its producer.
+ * Plugin-defined JSON metadata. The producer defines its meaning and must exclude secrets.
  */
 final readonly class Metadata
 {
     /**
-     * Validate only shared structure, never infer domain meaning from field names or schema syntax.
+     * Create metadata from a non-empty schema name and a JSON object.
      */
     public function __construct(
         /**
-         * Opaque nonempty producer-owned schema identity, preserved without normalization.
+         * Non-empty schema identifier chosen by the producer.
          */
         public string $schema,
         /**
-         * Exact original object-root JSON text, including whitespace and numeric spelling.
+         * JSON object text with no duplicate member names; kept as supplied.
          */
         public string $json,
     ) {

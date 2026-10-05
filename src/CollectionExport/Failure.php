@@ -5,27 +5,27 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\CollectionExport;
 
 /**
- * Ordinary typed export outcome, never a substitute for malformed protocol or contract values.
+ * An export that failed, with an explanation for the caller.
  */
 final readonly class Failure
 {
     /**
-     * Canonical plugin-authored error category.
+     * Category of the export error.
      */
     public ErrorKind $kind;
 
     /**
-     * Human-readable plugin diagnostic, not automatically safe for tracing.
+     * Explanation for the caller; do not include secrets.
      */
     public string $message;
 
     /**
-     * Whether retrying this failed invocation may succeed.
+     * Whether retrying the export may succeed.
      */
     public bool $retryable;
 
     /**
-     * Return a coherent execution failure without converting protocol violations into success-shaped data.
+     * Describe an export failure and whether retrying may help.
      */
     public function __construct(ErrorKind $kind, string $message, bool $retryable = false)
     {

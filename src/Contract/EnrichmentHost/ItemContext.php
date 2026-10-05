@@ -8,42 +8,20 @@ use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 use Stashd\PluginSdk\Contract\IoHost\PreservedAsset;
 
 /**
- * Immutable enrichment-host.item-context contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * An item and the saved assets available for enrichment.
  */
 final readonly class ItemContext
 {
     /**
-     * Canonical item-id value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $itemId;
-
-    /**
-     * Canonical assets value; retained in contract order without normalization.
-     * @var list<PreservedAsset>
-     */
-    public array $assets;
-
-    /**
-     * Canonical metadata value; retained in contract order without normalization.
-     * @var list<PluginMetadata>
-     */
-    public array $metadata;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $itemId
-     * @param list<PreservedAsset> $assets
-     * @param list<PluginMetadata> $metadata
+     * Create the item context.
+     *
+     * @param string $itemId Identifier of the item this result belongs to.
+     * @param list<PreservedAsset> $assets Assets associated with this result.
+     * @param list<PluginMetadata> $metadata Metadata facets supplied by the plugin.
      */
     public function __construct(
-        string $itemId,
-        array $assets,
-        array $metadata,
-    ) {
-        $this->itemId = $itemId;
-        $this->assets = $assets;
-        $this->metadata = $metadata;
-    }
+        public string $itemId,
+        public array $assets,
+        public array $metadata,
+    ) {}
 }

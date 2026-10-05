@@ -7,18 +7,18 @@ namespace Stashd\PluginSdk\Contract\InputPlugin;
 use Stashd\PluginSdk\Contract\PluginTypes\PluginErrorDetail;
 
 /**
- * Canonical credential-unavailable branch of input-plugin.plugin-error.
+ * The credential unavailable form of plugin error.
  */
 final readonly class PluginErrorCredentialUnavailable implements PluginError
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var PluginErrorDetail
      */
     public PluginErrorDetail $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param PluginErrorDetail $value
      */
     public function __construct(PluginErrorDetail $value)

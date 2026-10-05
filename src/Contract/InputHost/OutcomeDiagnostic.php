@@ -7,33 +7,18 @@ namespace Stashd\PluginSdk\Contract\InputHost;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 
 /**
- * Immutable input-host.outcome-diagnostic contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * An explanation of a result, with supporting metadata.
  */
 final readonly class OutcomeDiagnostic
 {
     /**
-     * Canonical message value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $message;
-
-    /**
-     * Canonical evidence value; retained in contract order without normalization.
-     * @var list<PluginMetadata>
-     */
-    public array $evidence;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $message
-     * @param list<PluginMetadata> $evidence
+     * Create the outcome diagnostic.
+     *
+     * @param string $message Human-readable explanation of what happened.
+     * @param list<PluginMetadata> $evidence Plugin-owned metadata supporting the explanation.
      */
     public function __construct(
-        string $message,
-        array $evidence,
-    ) {
-        $this->message = $message;
-        $this->evidence = $evidence;
-    }
+        public string $message,
+        public array $evidence,
+    ) {}
 }

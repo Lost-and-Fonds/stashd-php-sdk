@@ -13,7 +13,11 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 final class RemoteHostResource implements OwnedResource
 {
     /**
-     * Bind a decoded resource to its owner and declared type.
+     * Create a resource wrapper for its owning call.
+     *
+     * @param Invocation $invocation Active call that owns the resource.
+     * @param string $id Host-issued resource ID.
+     * @param string $type Declared resource type.
      */
     public function __construct(
         private readonly Invocation $invocation,

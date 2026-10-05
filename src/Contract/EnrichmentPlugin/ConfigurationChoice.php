@@ -5,33 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\EnrichmentPlugin;
 
 /**
- * Immutable enrichment-plugin.configuration-choice contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * A selectable configuration value and its display label.
  */
 final readonly class ConfigurationChoice
 {
     /**
-     * Canonical value value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $value;
-
-    /**
-     * Canonical label value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $label;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $value
-     * @param string $label
+     * Create the configuration choice.
+     *
+     * @param string $value Value associated with this entry.
+     * @param string $label Text shown to the caller for this choice.
      */
     public function __construct(
-        string $value,
-        string $label,
-    ) {
-        $this->value = $value;
-        $this->label = $label;
-    }
+        public string $value,
+        public string $label,
+    ) {}
 }

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\CollectionExportPlugin;
 
 /**
- * Typed author lifecycle surface for collection-export-plugin.
- * Values are independent of JSON framing and host process reuse.
+ * Internal collection-export-plugin methods used by the runtime.
  */
 interface Plugin
 {
     /**
-     * Execute canonical export-collection using current invocation values only.
+     * Run export collection with the supplied values.
      * @param string $exporter
      * @param Collection $collection
      * @param list<Setting> $options

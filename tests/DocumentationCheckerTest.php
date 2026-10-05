@@ -34,3 +34,59 @@ it('requires useful description presence on every declaration kind', function (s
     ["/** @template T\n * continuation of an annotation\n */ class Value {}", 1],
     ['$value = new class {};', 1],
 ]);
+
+it('checks promoted properties against their own constructor parameter descriptions', function (string $tags, string $parameters, int $missing): void {
+    $source = '<?php
+/**
+ * A saved asset that a plugin may read.
+ */
+final readonly class Asset
+{
+    /**
+     * Create a saved asset.
+     *
+' . $tags . '
+     */
+    public function __construct(' . $parameters . ') {}
+}';
+
+    expect((new DocumentationChecker())->check($source, 'fixture'))->toHaveCount($missing);
+})->with([
+    'documented' => ['     * @param string $id Stable asset ID.', 'public string $id', 0],
+    'missing tag' => ['', 'public string $id', 1],
+    'wrong name' => ['     * @param string $other Stable asset ID.', 'public string $id', 1],
+    'empty description' => ['     * @param string $id', 'public string $id', 1],
+    'next annotation is not prose' => ["     * @param string \$id\n     * @return void", 'public string $id', 1],
+    'punctuation' => ['     * @param string $id ...', 'public string $id', 1],
+    'placeholder' => ['     * @param string $id TODO', 'public string $id', 1],
+    'repeated name' => ['     * @param string $id ID.', 'public string $id', 1],
+    'repeated type' => ['     * @param string $id string', 'public string $id', 1],
+    'multiple properties' => ["     * @param string \$id Stable asset ID.\n     * @param string|null \$reference Opaque reference used to read the asset.", 'public string $id, public ?string $reference', 0],
+    'partially documented' => ['     * @param string $id Stable asset ID.', 'public string $id, public string $reference', 1],
+    'generic with spaces' => ['     * @param array<string, string> $metadata Metadata grouped by schema.', 'public array $metadata', 0],
+    'ordinary parameter' => ['', 'string $id', 0],
+]);
+
+it('still requires constructor prose and separate documentation for ordinary properties', function (): void {
+    $source = <<<'PHP'
+        <?php
+        /**
+         * A saved asset that a plugin may read.
+         */
+        final readonly class Asset
+        {
+            public string $reference;
+
+            /**
+             * @param string $id Stable asset ID.
+             * @param string $reference Opaque reference used to read the asset.
+             */
+            public function __construct(public string $id, string $reference)
+            {
+                $this->reference = $reference;
+            }
+        }
+        PHP;
+
+    expect((new DocumentationChecker())->check($source, 'fixture'))->toHaveCount(2);
+});

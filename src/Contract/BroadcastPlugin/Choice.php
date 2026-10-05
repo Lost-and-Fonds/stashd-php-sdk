@@ -5,33 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\BroadcastPlugin;
 
 /**
- * Immutable broadcast-plugin.choice contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * A selectable value and its display label.
  */
 final readonly class Choice
 {
     /**
-     * Canonical value value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $value;
-
-    /**
-     * Canonical label value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $label;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $value
-     * @param string $label
+     * Create the choice.
+     *
+     * @param string $value Value associated with this entry.
+     * @param string $label Text shown to the caller for this choice.
      */
     public function __construct(
-        string $value,
-        string $label,
-    ) {
-        $this->value = $value;
-        $this->label = $label;
-    }
+        public string $value,
+        public string $label,
+    ) {}
 }

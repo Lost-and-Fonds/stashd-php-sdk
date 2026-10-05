@@ -13,7 +13,10 @@ use Stashd\PluginSdk\Helpers;
 final readonly class Resolve
 {
     /**
-     * Set up resolution with caller values and the available helpers.
+     * Create a request to identify a source.
+     *
+     * @param Source $source Source values supplied by the caller.
+     * @param Helpers $helpers Tools and credentials available during this call.
      */
     public function __construct(
         public Source $source,

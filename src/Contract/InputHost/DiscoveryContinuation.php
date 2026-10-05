@@ -5,24 +5,16 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
- * Immutable input-host.discovery-continuation contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * A restart point for an unfinished discovery run, with no credentials.
  */
 final readonly class DiscoveryContinuation
 {
     /**
-     * Canonical value value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $value;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $value
+     * Create the discovery continuation.
+     *
+     * @param string $value Plugin-owned restart data that works across processes and contains no credentials.
      */
     public function __construct(
-        string $value,
-    ) {
-        $this->value = $value;
-    }
+        public string $value,
+    ) {}
 }

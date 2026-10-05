@@ -27,12 +27,12 @@ interface InputPlugin
     public function resolveDelegation(ResolveDelegation $request): ResolvedInput;
 
     /**
-     * Save bounded batches and acknowledge the final coverage outcome.
+     * Find items and save batches with a restart point, then save the final result.
      */
     public function discover(Discovery $discovery): void;
 
     /**
-     * Save one item independently, returning its finished files and coverage.
+     * Save one item and return its finished files and any missing work.
      */
     public function acquire(Acquisition $acquisition): AcquisitionResult;
 }

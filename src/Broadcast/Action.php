@@ -13,7 +13,10 @@ use Stashd\PluginSdk\Helpers;
 final readonly class Action
 {
     /**
-     * Keep the action name, settings, and available tools together.
+     * Create a request to run a destination action.
+     *
+     * @param string $name Plugin-defined action name.
+     * @param Helpers $tools Tools and credentials available for this action.
      * @param list<Setting> $settings Current destination configuration.
      * @param list<Setting> $payload Values supplied specifically for this action.
      */

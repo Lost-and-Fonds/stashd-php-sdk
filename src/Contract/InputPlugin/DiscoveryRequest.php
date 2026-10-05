@@ -8,69 +8,26 @@ use Stashd\PluginSdk\Contract\InputHost\DiscoveryContinuation;
 use Stashd\PluginSdk\Contract\InputHost\DiscoveryRefreshState;
 
 /**
- * Immutable input-plugin.discovery-request contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * Settings for a discovery run; these stay fixed when the run resumes.
  */
 final readonly class DiscoveryRequest
 {
     /**
-     * Canonical input-id value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $inputId;
-
-    /**
-     * Canonical intent value; retained in contract order without normalization.
-     * @var DiscoveryIntent
-     */
-    public DiscoveryIntent $intent;
-
-    /**
-     * Canonical options value; retained in contract order without normalization.
-     * @var list<InputOption>
-     */
-    public array $options;
-
-    /**
-     * Canonical continuation value; retained in contract order without normalization.
-     * @var DiscoveryContinuation|null
-     */
-    public ?DiscoveryContinuation $continuation;
-
-    /**
-     * Canonical refresh-state value; retained in contract order without normalization.
-     * @var DiscoveryRefreshState|null
-     */
-    public ?DiscoveryRefreshState $refreshState;
-
-    /**
-     * Canonical maximum-items-per-batch value; retained in contract order without normalization.
-     * @var int
-     */
-    public int $maximumItemsPerBatch;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $inputId
-     * @param DiscoveryIntent $intent
-     * @param list<InputOption> $options
-     * @param DiscoveryContinuation|null $continuation
-     * @param DiscoveryRefreshState|null $refreshState
-     * @param int $maximumItemsPerBatch
+     * Create the discovery request.
+     *
+     * @param string $inputId Input identifier returned when the source was resolved.
+     * @param DiscoveryIntent $intent Whether to refresh known work or enumerate the full input.
+     * @param list<InputOption> $options Settings selected for this work.
+     * @param DiscoveryContinuation|null $continuation Restart point for unfinished work; null starts a new run.
+     * @param DiscoveryRefreshState|null $refreshState Baseline from a completed run; null when none is available.
+     * @param int $maximumItemsPerBatch Positive upper limit on items per batch; frame size may require fewer.
      */
     public function __construct(
-        string $inputId,
-        DiscoveryIntent $intent,
-        array $options,
-        ?DiscoveryContinuation $continuation,
-        ?DiscoveryRefreshState $refreshState,
-        int $maximumItemsPerBatch,
-    ) {
-        $this->inputId = $inputId;
-        $this->intent = $intent;
-        $this->options = $options;
-        $this->continuation = $continuation;
-        $this->refreshState = $refreshState;
-        $this->maximumItemsPerBatch = $maximumItemsPerBatch;
-    }
+        public string $inputId,
+        public DiscoveryIntent $intent,
+        public array $options,
+        public ?DiscoveryContinuation $continuation,
+        public ?DiscoveryRefreshState $refreshState,
+        public int $maximumItemsPerBatch,
+    ) {}
 }

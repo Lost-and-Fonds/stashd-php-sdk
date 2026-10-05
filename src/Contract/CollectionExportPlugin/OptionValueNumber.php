@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\CollectionExportPlugin;
 
 /**
- * Canonical number branch of collection-export-plugin.option-value.
+ * The number form of option value.
  */
 final readonly class OptionValueNumber implements OptionValue
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var int
      */
     public int $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param int $value
      */
     public function __construct(int $value)

@@ -7,20 +7,20 @@ namespace Stashd\PluginSdk\Shared;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 
 /**
- * Stage-local fractional completion; null is indeterminate and stages need not be monotonic.
+ * A description of current work and its completion fraction, when known.
  */
 final readonly class Progress
 {
     /**
-     * Reject invalid fractions rather than clamping or reinterpreting percentages.
+     * Create a progress report; fractions outside zero to one are rejected.
      */
     public function __construct(
         /**
-         * Plugin-defined presentation text, never parsed as a lifecycle state.
+         * Description of the work currently in progress.
          */
         public string $stage,
         /**
-         * Finite fraction in the inclusive unit interval, or null for stage-only reporting.
+         * Completion fraction from zero to one; null when unknown.
          */
         public ?float $fraction = null,
     ) {

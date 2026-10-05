@@ -12,7 +12,7 @@ use InvalidArgumentException;
 final readonly class DiscoveryFinish
 {
     /**
-     * Keep the declared finish outcome and its supporting details together.
+     * Describe how discovery ended and what work is missing.
      * @param string $kind Exhaustive, partial, or indeterminate coverage.
      * @param string|null $refreshState Baseline to use for a later successful refresh.
      * @param list<Deficiency> $deficiencies Reasons the run was incomplete.
@@ -34,7 +34,7 @@ final readonly class DiscoveryFinish
     }
 
     /**
-     * Mark coherent but incomplete coverage with at least one reason.
+     * Mark the run incomplete and give at least one reason.
      * @param list<Deficiency> $deficiencies
      */
     public static function partial(array $deficiencies): self

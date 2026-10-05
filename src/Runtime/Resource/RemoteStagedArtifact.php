@@ -19,7 +19,10 @@ use stdClass;
 final class RemoteStagedArtifact
 {
     /**
-     * Keep the host-issued receipt and its invocation together.
+     * Create readable output from a completed receipt.
+     *
+     * @param Invocation $invocation Active call in which the output was created.
+     * @param StagedArtifact $receipt Receipt returned when the writer finished.
      */
     public function __construct(
         private readonly Invocation $invocation,

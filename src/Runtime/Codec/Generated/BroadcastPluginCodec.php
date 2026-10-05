@@ -28,12 +28,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen broadcast-plugin declarations.
+ * Converts JSON values to and from broadcast-plugin declarations.
  */
 final class BroadcastPluginCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeChoice(mixed $value): Choice
     {
@@ -46,7 +46,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeChoice(Choice $value): stdClass
     {
@@ -57,7 +57,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDestinationConfiguration(mixed $value): DestinationConfiguration
     {
@@ -69,7 +69,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDestinationConfiguration(DestinationConfiguration $value): stdClass
     {
@@ -79,7 +79,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeOperationRequest(mixed $value): OperationRequest
     {
@@ -93,7 +93,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeOperationRequest(OperationRequest $value): stdClass
     {
@@ -105,7 +105,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeOperationResult(mixed $value): OperationResult
     {
@@ -118,7 +118,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeOperationResult(OperationResult $value): stdClass
     {
@@ -129,7 +129,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodePublication(mixed $value): Publication
     {
@@ -142,7 +142,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodePublication(Publication $value): stdClass
     {
@@ -153,7 +153,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeSetting(mixed $value): Setting
     {
@@ -166,7 +166,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeSetting(Setting $value): stdClass
     {
@@ -177,7 +177,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Decode only a declared canonical enum spelling.
+     * Read a supported enum value.
      */
     public static function decodeFileReportStatus(mixed $value): FileReportStatus
     {
@@ -185,7 +185,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode the exact protocol identity of this enum case.
+     * Write the enum value expected by the host.
      */
     public static function encodeFileReportStatus(FileReportStatus $value): string
     {
@@ -214,7 +214,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeOptionValue(OptionValue $value): stdClass
     {
@@ -252,7 +252,7 @@ final class BroadcastPluginCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodePluginError(PluginError $value): stdClass
     {

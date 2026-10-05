@@ -5,33 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Immutable io-host.plugin-metadata contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * Plugin-defined JSON metadata identified by a schema.
  */
 final readonly class PluginMetadata
 {
     /**
-     * Canonical schema value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $schema;
-
-    /**
-     * Canonical json value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $json;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $schema
-     * @param string $json
+     * Create the plugin metadata.
+     *
+     * @param string $schema Non-empty schema identifier chosen by the metadata producer.
+     * @param string $json JSON object text with no duplicate member names; must not contain secrets.
      */
     public function __construct(
-        string $schema,
-        string $json,
-    ) {
-        $this->schema = $schema;
-        $this->json = $json;
-    }
+        public string $schema,
+        public string $json,
+    ) {}
 }

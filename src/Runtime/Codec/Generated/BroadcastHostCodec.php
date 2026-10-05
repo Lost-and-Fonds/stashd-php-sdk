@@ -22,12 +22,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen broadcast-host declarations.
+ * Converts JSON values to and from broadcast-host declarations.
  */
 final class BroadcastHostCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeItem(mixed $value): Item
     {
@@ -41,7 +41,7 @@ final class BroadcastHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeItem(Item $value): stdClass
     {
@@ -53,7 +53,7 @@ final class BroadcastHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodePublishedFile(mixed $value): PublishedFile
     {
@@ -67,7 +67,7 @@ final class BroadcastHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodePublishedFile(PublishedFile $value): stdClass
     {
@@ -101,7 +101,7 @@ final class BroadcastHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeCollectionReadError(CollectionReadError $value): string|stdClass
     {
@@ -136,7 +136,7 @@ final class BroadcastHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodePublicationReportError(PublicationReportError $value): string|stdClass
     {

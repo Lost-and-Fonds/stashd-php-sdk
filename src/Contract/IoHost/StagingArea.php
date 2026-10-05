@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Invocation-scoped io-host.staging-area capability.
- * Explicit release ends ownership; retained objects cannot extend invocation authority.
+ * A staging area available during the current call.
+ * Close it when finished; it cannot be used after the call ends.
  */
 interface StagingArea
 {
     /**
-     * Explicitly release ownership; duplicate release and later use violate resource lifetime.
+     * Release this resource; closing it again or using it afterwards is an error.
      */
     public function close(): void;
 
     /**
-     * Invoke canonical staging-area.create on this live resource.
+     * Run create on this staging area.
      * Ordinary host failures are distinct from protocol violations.
      * @param string|null $mediaType
      * @param list<PluginMetadata> $metadata

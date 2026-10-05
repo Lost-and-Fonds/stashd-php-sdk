@@ -16,7 +16,7 @@ final readonly class HelperTerminalExited implements HelperTerminal
     public HelperExit $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param HelperExit $value
      */
     public function __construct(HelperExit $value)

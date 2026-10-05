@@ -30,12 +30,12 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen input-host declarations.
+ * Converts JSON values to and from input-host declarations.
  */
 final class InputHostCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDeficiency(mixed $value): Deficiency
     {
@@ -48,7 +48,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDeficiency(Deficiency $value): stdClass
     {
@@ -59,7 +59,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDiscoveredItem(mixed $value): DiscoveredItem
     {
@@ -76,7 +76,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDiscoveredItem(DiscoveredItem $value): stdClass
     {
@@ -91,7 +91,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDiscoveryBatch(mixed $value): DiscoveryBatch
     {
@@ -104,7 +104,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDiscoveryBatch(DiscoveryBatch $value): stdClass
     {
@@ -115,7 +115,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDiscoveryContinuation(mixed $value): DiscoveryContinuation
     {
@@ -127,7 +127,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDiscoveryContinuation(DiscoveryContinuation $value): stdClass
     {
@@ -137,7 +137,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeDiscoveryRefreshState(mixed $value): DiscoveryRefreshState
     {
@@ -149,7 +149,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeDiscoveryRefreshState(DiscoveryRefreshState $value): stdClass
     {
@@ -159,7 +159,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeInputDelegation(mixed $value): InputDelegation
     {
@@ -171,7 +171,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeInputDelegation(InputDelegation $value): stdClass
     {
@@ -181,7 +181,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodeOutcomeDiagnostic(mixed $value): OutcomeDiagnostic
     {
@@ -194,7 +194,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodeOutcomeDiagnostic(OutcomeDiagnostic $value): stdClass
     {
@@ -205,7 +205,7 @@ final class InputHostCodec
     }
 
     /**
-     * Decode only a declared canonical enum spelling.
+     * Read a supported enum value.
      */
     public static function decodeDeficiencyDisposition(mixed $value): DeficiencyDisposition
     {
@@ -213,7 +213,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode the exact protocol identity of this enum case.
+     * Write the enum value expected by the host.
      */
     public static function encodeDeficiencyDisposition(DeficiencyDisposition $value): string
     {
@@ -241,7 +241,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeCredentialError(CredentialError $value): string
     {
@@ -272,7 +272,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeDiscoveryCommitError(DiscoveryCommitError $value): string
     {
@@ -304,7 +304,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeDiscoveryFinish(DiscoveryFinish $value): stdClass
     {
@@ -337,7 +337,7 @@ final class InputHostCodec
     }
 
     /**
-     * Encode only canonical concrete branches, rejecting foreign implementations of the union.
+     * Write a supported result type, rejecting unrecognized implementations.
      */
     public static function encodeDiscoveryProgress(DiscoveryProgress $value): stdClass
     {

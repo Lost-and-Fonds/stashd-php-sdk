@@ -7,18 +7,18 @@ namespace Stashd\PluginSdk\Contract\InputPlugin;
 use Stashd\PluginSdk\Contract\InputHost\Deficiency;
 
 /**
- * Canonical partial branch of input-plugin.preservation-outcome.
+ * The partial form of preservation outcome.
  */
 final readonly class PreservationOutcomePartial implements PreservationOutcome
 {
     /**
-     * Payload belonging only to this variant case, preserving optional absence and list order.
+     * Data carried by this result.
      * @var list<Deficiency>
      */
     public array $value;
 
     /**
-     * Construct this specific branch without string tags or raw wire objects.
+     * Create this result with its associated data.
      * @param list<Deficiency> $value
      */
     public function __construct(array $value)

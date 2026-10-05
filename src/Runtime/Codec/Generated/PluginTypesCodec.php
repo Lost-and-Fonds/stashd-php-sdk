@@ -9,12 +9,12 @@ use Stashd\PluginSdk\Runtime\Codec\Values;
 use stdClass;
 
 /**
- * Exact focused value codec for frozen plugin-types declarations.
+ * Converts JSON values to and from plugin-types declarations.
  */
 final class PluginTypesCodec
 {
     /**
-     * Decode all and only the declared fields before constructing an immutable value.
+     * Read the expected fields, rejecting missing or extra fields.
      */
     public static function decodePluginErrorDetail(mixed $value): PluginErrorDetail
     {
@@ -27,7 +27,7 @@ final class PluginTypesCodec
     }
 
     /**
-     * Encode canonical field spellings without leaking PHP names into the wire.
+     * Write the field names expected by the host.
      */
     public static function encodePluginErrorDetail(PluginErrorDetail $value): stdClass
     {

@@ -5,24 +5,16 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\IoHost;
 
 /**
- * Immutable io-host.credential-reference contract fact.
- * Field order and opaque values follow stashd:plugin@0.18.0 without normalization.
+ * An opaque credential selector; knowing its ID does not grant access.
  */
 final readonly class CredentialReference
 {
     /**
-     * Canonical id value; retained in contract order without normalization.
-     * @var string
-     */
-    public string $id;
-
-    /**
-     * Assemble the complete contract fact; wire and lifecycle validators enforce boundary invariants.
-     * @param string $id
+     * Create the credential reference.
+     *
+     * @param string $id Opaque credential selector; the host checks permission each time it is used.
      */
     public function __construct(
-        string $id,
-    ) {
-        $this->id = $id;
-    }
+        public string $id,
+    ) {}
 }
