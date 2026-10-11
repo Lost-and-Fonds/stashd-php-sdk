@@ -10,6 +10,7 @@ use Stashd\PluginSdk\Broadcast\ActionResult;
 use Stashd\PluginSdk\Broadcast\Publication;
 use Stashd\PluginSdk\Broadcast\Publish;
 use Stashd\PluginSdk\BroadcastPlugin;
+use Stashd\PluginSdk\Helper\CancelRequested;
 use Stashd\PluginSdk\Helper\Exited;
 use Stashd\PluginSdk\Helper\Output;
 use Stashd\PluginSdk\Helper\OutputStream;
@@ -48,7 +49,9 @@ final class ProgressBroadcast implements BroadcastPlugin
         $progress = '';
 
         foreach ($process->events() as $event) {
-            if ($event instanceof Output && $event->stream === OutputStream::Stderr) {
+            if ($event instanceof CancelRequested) {
+                $process->cancel();
+            } elseif ($event instanceof Output && $event->stream === OutputStream::Stderr) {
                 $progress .= $event->bytes;
 
                 while (($end = strpos($progress, "\r")) !== false) {
@@ -66,7 +69,10 @@ final class ProgressBroadcast implements BroadcastPlugin
                     throw new RuntimeException('Helper did not finish its output');
                 }
 
-                foreach ($event->output->finish()->chunks() as $chunk) {
+                $artifact = $event->output->finish();
+                $event->output->close();
+
+                foreach ($artifact->chunks() as $chunk) {
                     $this->saved .= $chunk;
                 }
             } else {
@@ -84,6 +90,10 @@ final class ProgressBroadcast implements BroadcastPlugin
      */
     public function publish(Publish $request): Publication
     {
+        foreach ($request->items() as $item) {
+            $request->reportDestinationMetadata($item->metadata);
+        }
+
         return new Publication();
     }
 }

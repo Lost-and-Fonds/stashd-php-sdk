@@ -13,6 +13,7 @@ jobs:
           coverage: none
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
+      - run: composer check:contract
       - run: composer check:docs
       - run: composer lint
       - run: composer test:static

@@ -31,9 +31,16 @@ final class Writer
     public function transfer(): RemoteStagedWriter
     {
         $writer = $this->writer ?? throw new LogicException('Writer was already handed to a helper');
-        $this->writer = null;
 
         return $writer;
+    }
+
+    /**
+     * Retire this wrapper after the runtime commits ownership transfer.
+     */
+    public function consume(): void
+    {
+        $this->writer = null;
     }
 
     /**
@@ -41,13 +48,7 @@ final class Writer
      */
     public function write(string $bytes): void
     {
-        $values = [];
-
-        for ($index = 0, $length = strlen($bytes); $index < $length; ++$index) {
-            $values[] = ord($bytes[$index]);
-        }
-
-        ($this->writer ?? throw new LogicException('Writer was already handed to a helper'))->write($values);
+        ($this->writer ?? throw new LogicException('Writer was already handed to a helper'))->writeBytes($bytes);
     }
 
     /**

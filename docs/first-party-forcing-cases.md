@@ -1,6 +1,6 @@
 # First-party plugin forcing cases
 
-This note checks the intended behaviour of Stashd's current first-party plugins against the frozen `stashd:plugin@0.18.0` contract and the PHP SDK 0.4 authoring design.
+This note checks the intended behaviour of Stashd's current first-party plugins against the frozen `stashd:plugin@0.19.0` contract and the PHP SDK 0.4 authoring design.
 
 The goal is not to preserve old implementation patterns. The old plugins contain filesystem paths, giant context objects, preparation phases, provider-shaped DTOs, and other 0.3-era workarounds that must not become new SDK requirements.
 
@@ -152,7 +152,7 @@ Therefore the Stashd Core migration still needs a separate application-integrati
 - orchestration of required Enrichment before Broadcast;
 - the sequencing of filesystem materialisation and Jellyfin/Plex refresh.
 
-These are not reasons to contaminate `stashd:plugin@0.18.0` or the PHP SDK with old manifest fields.
+These are not reasons to contaminate `stashd:plugin@0.19.0` or the PHP SDK with old manifest fields.
 
 ## Refresh sequencing warning
 

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime\Resource;
 
-use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
+use Stashd\PluginSdk\Contract\IoHost\StagingError;
 use Stashd\PluginSdk\Runtime\HostFailure;
 use Stashd\PluginSdk\Runtime\Invocation;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
@@ -47,7 +48,7 @@ final class RemoteStagingArea implements OwnedResource
      */
     public function create(?string $mediaType): RemoteStagedWriter
     {
-        $result = $this->invocation->typedCall('stashd:plugin/io-host.staging-area.create', [
+        $result = $this->invocation->typedCall(IoHostMethod::StagingAreaCreate, [
             'self' => $this, 'media-type' => $mediaType, 'metadata' => [],
         ], [
             'self' => ['kind' => 'borrow', 'value' => ['kind' => 'named', 'name' => 'staging-area']],
@@ -60,7 +61,11 @@ final class RemoteStagingArea implements OwnedResource
         }
 
         if (property_exists($result, 'error')) {
-            throw new HostFailure(IoHostCodec::decodeStagingError($result->error));
+            if (!$result->error instanceof StagingError) {
+                $this->invocation->violate('Invalid staging error');
+            }
+
+            throw new HostFailure($result->error);
         }
 
         if (!$result->ok instanceof RemoteStagedWriter) {

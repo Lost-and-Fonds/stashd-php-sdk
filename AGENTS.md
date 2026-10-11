@@ -2,7 +2,7 @@
 
 This repository is the PHP SDK for Stashd plugins.
 
-Stashd plugins communicate with Core through the frozen `stashd:plugin@0.18.0` contract. The SDK's job is to make that contract feel like normal, pleasant PHP.
+Stashd plugins communicate with Core through the frozen `stashd:plugin@0.19.0` contract. The SDK's job is to make that contract feel like normal, pleasant PHP.
 
 The public SDK should hide protocol machinery wherever possible.
 
@@ -46,7 +46,7 @@ The important public entry points should be obvious when a developer opens `src/
 - `Stashd\PluginSdk\BroadcastPlugin`
 - `Stashd\PluginSdk\EnrichmentPlugin`
 - `Stashd\PluginSdk\CollectionExporter`
-- `Stashd\PluginSdk\Helpers`
+- `Stashd\PluginSdk\Tools`
 
 Supporting author-facing types should live in small domain namespaces such as:
 
@@ -431,7 +431,7 @@ Run the relevant:
 - static analysis
 - documentation checker
 - formatting/style checks
-- generator consistency checks
+- generator consistency checks (`composer check:contract`, including installed contract provenance)
 
 Do not fix unrelated failures unless they block the requested work. Report them clearly.
 

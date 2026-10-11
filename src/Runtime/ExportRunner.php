@@ -6,6 +6,10 @@ namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\BroadcastPlugin;
 use Stashd\PluginSdk\CollectionExporter;
+use Stashd\PluginSdk\Contract\BroadcastPlugin\BroadcastPluginMethod;
+use Stashd\PluginSdk\Contract\CollectionExportPlugin\CollectionExportPluginMethod;
+use Stashd\PluginSdk\Contract\EnrichmentPlugin\EnrichmentPluginMethod;
+use Stashd\PluginSdk\Contract\InputPlugin\InputPluginMethod;
 use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\EnrichmentPlugin;
@@ -75,21 +79,22 @@ final class ExportRunner
                 $invocation = $identity;
                 $this->trace->emit(TraceLevel::Basic, 'invocation.start', ['invocation' => $identity, 'id' => $id]);
 
-                if ($plugin instanceof CollectionExporter && $method === 'stashd:plugin/collection-export-plugin.export-collection') {
+                if ($plugin instanceof CollectionExporter && $method === CollectionExportPluginMethod::ExportCollection->value) {
                     $result = $codec->invoke($plugin, $params);
-                } elseif ($plugin instanceof InputPlugin && str_starts_with($method, 'stashd:plugin/input-plugin.')) {
-                    $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/input-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
-                    $result = (new InputDispatcher())->invoke($plugin, $method, $params, $active);
-                } elseif ($plugin instanceof BroadcastPlugin && str_starts_with($method, 'stashd:plugin/broadcast-plugin.')) {
+                } elseif ($plugin instanceof InputPlugin && ($inputMethod = InputPluginMethod::tryFrom($method)) !== null) {
+                    $active = new Invocation($identity, $id, $this->channel, $this->trace, $inputMethod === InputPluginMethod::CanResolve ? [] : ['stashd:plugin/io-host', 'stashd:plugin/input-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
+                    $result = (new InputDispatcher())->invoke($plugin, $inputMethod, $params, $active);
+                } elseif ($plugin instanceof BroadcastPlugin && ($broadcastMethod = BroadcastPluginMethod::tryFrom($method)) !== null) {
                     $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/broadcast-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
-                    $result = (new BroadcastDispatcher())->invoke($plugin, $method, $params, $active);
-                } elseif ($plugin instanceof EnrichmentPlugin && str_starts_with($method, 'stashd:plugin/enrichment-plugin.')) {
+                    $result = (new BroadcastDispatcher())->invoke($plugin, $broadcastMethod, $params, $active);
+                } elseif ($plugin instanceof EnrichmentPlugin && ($enrichmentMethod = EnrichmentPluginMethod::tryFrom($method)) !== null) {
                     $active = new Invocation($identity, $id, $this->channel, $this->trace, ['stashd:plugin/io-host', 'stashd:plugin/enrichment-host', 'stashd:plugin/http-host', 'stashd:plugin/progress-host']);
-                    $result = (new EnrichmentDispatcher())->invoke($plugin, $method, $params, $active);
+                    $result = (new EnrichmentDispatcher())->invoke($plugin, $enrichmentMethod, $params, $active);
                 } else {
                     throw new ProtocolViolation('Unsupported lifecycle method for component');
                 }
 
+                $active?->requireActive();
                 $this->channel->write((object) ['protocol' => 1, 'id' => $id, 'kind' => 'response',
                     'invocation' => $identity, 'result' => $result]);
                 $active?->cleanup();

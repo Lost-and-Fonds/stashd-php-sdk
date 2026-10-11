@@ -6,19 +6,23 @@ namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\Contract\EnrichmentHost\ItemContext;
 use Stashd\PluginSdk\Contract\EnrichmentPlugin\ConfigurationValue as ContractSelection;
+use Stashd\PluginSdk\Contract\EnrichmentPlugin\EnrichmentPluginMethod;
 use Stashd\PluginSdk\Contract\EnrichmentPlugin\PluginErrorInvalidConfiguration;
 use Stashd\PluginSdk\Contract\EnrichmentPlugin\PluginErrorUnsupported;
+use Stashd\PluginSdk\Enrichment\Capability;
+use Stashd\PluginSdk\Enrichment\ConfigurationChoice;
+use Stashd\PluginSdk\Enrichment\ConfigurationOption;
 use Stashd\PluginSdk\Enrichment\Item;
 use Stashd\PluginSdk\Enrichment\Request;
 use Stashd\PluginSdk\Enrichment\Selection;
 use Stashd\PluginSdk\EnrichmentPlugin;
 use Stashd\PluginSdk\Helper\Credential;
-use Stashd\PluginSdk\Helpers;
 use Stashd\PluginSdk\Runtime\Codec\AuthorValues;
 use Stashd\PluginSdk\Runtime\Codec\Generated\EnrichmentHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\Generated\EnrichmentPluginCodec;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\Values;
+use Stashd\PluginSdk\Tools;
 use stdClass;
 
 /**
@@ -29,12 +33,11 @@ final class EnrichmentDispatcher
     /**
      * Dispatch exactly one declared Enrichment method.
      */
-    public function invoke(EnrichmentPlugin $plugin, string $method, stdClass $params, Invocation $invocation): stdClass
+    public function invoke(EnrichmentPlugin $plugin, EnrichmentPluginMethod $method, stdClass $params, Invocation $invocation): stdClass
     {
         return match ($method) {
-            'stashd:plugin/enrichment-plugin.capabilities' => $this->capabilities($plugin, $params),
-            'stashd:plugin/enrichment-plugin.enrich' => $this->enrich($plugin, $params, $invocation),
-            default => throw new ProtocolViolation('Unsupported Enrichment lifecycle method'),
+            EnrichmentPluginMethod::Capabilities => $this->capabilities($plugin, $params),
+            EnrichmentPluginMethod::Enrich => $this->enrich($plugin, $params, $invocation),
         };
     }
 
@@ -46,7 +49,7 @@ final class EnrichmentDispatcher
         $record = Values::record($params, ['context']);
         $context = EnrichmentHostCodec::decodeItemContext($record->context);
         $publicContext = self::item($context);
-        $capabilities = array_map(EnrichmentPluginCodec::decodeCapability(...), $plugin->capabilities($publicContext));
+        $capabilities = self::contractCapabilities($plugin->capabilities($publicContext));
         EnrichmentValidation::descriptors($capabilities);
 
         return (object) ['ok' => array_map(EnrichmentPluginCodec::encodeCapability(...), $capabilities)];
@@ -60,7 +63,7 @@ final class EnrichmentDispatcher
         $record = Values::record($params, ['context', 'capability-id', 'capability-revision', 'configuration', 'credentials']);
         $context = EnrichmentHostCodec::decodeItemContext($record->context);
         $publicContext = self::item($context);
-        $capabilities = array_map(EnrichmentPluginCodec::decodeCapability(...), $plugin->capabilities($publicContext));
+        $capabilities = self::contractCapabilities($plugin->capabilities($publicContext));
         $configuration = array_map(EnrichmentPluginCodec::decodeConfigurationValue(...), Values::list($record->configuration));
         $selected = EnrichmentValidation::select($capabilities, Values::text($record->{'capability-id'}), Values::text($record->{'capability-revision'}), $configuration);
 
@@ -75,7 +78,7 @@ final class EnrichmentDispatcher
             $credentials[] = new Credential($binding->name, $binding->reference->id);
         }
 
-        $helpers = new Helpers($invocation, $credentials);
+        $helpers = new Tools($invocation, $credentials);
         $selections = array_map(static fn(ContractSelection $selection): Selection => new Selection($selection->key, $selection->value), $configuration);
         $request = new Request($publicContext, $selected->id, $selected->revision, $selections, $helpers, $invocation);
         $result = $plugin->enrich($request);
@@ -91,6 +94,19 @@ final class EnrichmentDispatcher
 
     /**
      * Convert saved item context to the public value type.
+     */
+    /**
+     * Convert author capability descriptions once before contract validation.
+     * @param list<Capability> $values Author capabilities.
+     * @return list<\Stashd\PluginSdk\Contract\EnrichmentPlugin\Capability>
+     */
+    private static function contractCapabilities(array $values): array
+    {
+        return array_map(static fn(Capability $capability) => new \Stashd\PluginSdk\Contract\EnrichmentPlugin\Capability($capability->id, $capability->revision, array_map(static fn(ConfigurationOption $option) => new \Stashd\PluginSdk\Contract\EnrichmentPlugin\ConfigurationOption($option->key, $option->label, $option->required, array_map(static fn(ConfigurationChoice $choice) => new \Stashd\PluginSdk\Contract\EnrichmentPlugin\ConfigurationChoice($choice->value, $choice->label), $option->choices)), $capability->options)), $values);
+    }
+
+    /**
+     * Map saved context to immutable author-facing values.
      */
     private static function item(ItemContext $context): Item
     {

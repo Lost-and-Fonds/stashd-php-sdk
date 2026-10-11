@@ -8,7 +8,6 @@ use Stashd\PluginSdk\Broadcast\Item;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 use Stashd\PluginSdk\Contract\IoHost\PreservedAsset;
 use Stashd\PluginSdk\Helper\Artifact;
-use Stashd\PluginSdk\Runtime\Codec\Generated\BroadcastHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use Stashd\PluginSdk\Shared\Asset;
@@ -40,9 +39,8 @@ final class AuthorValues
     /**
      * Decode one selected item into author-facing values.
      */
-    public static function broadcastItem(mixed $value): Item
+    public static function broadcastItem(\Stashd\PluginSdk\Contract\BroadcastHost\Item $item): Item
     {
-        $item = BroadcastHostCodec::decodeItem($value);
 
         return new Item(
             $item->id,

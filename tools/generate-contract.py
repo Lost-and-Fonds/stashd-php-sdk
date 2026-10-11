@@ -2,6 +2,7 @@
 """Generate typed immutable contract facts from the frozen language-neutral schema."""
 
 import argparse
+import hashlib
 import json
 import subprocess
 import tempfile
@@ -35,7 +36,7 @@ HELPER_DOCS = {
     'input-host.discovered-item': 'An item the plugin can later retrieve using its stable ID and opaque reference.',
     'input-host.discovered-item.id': 'Stable item identity used when the host requests acquisition.',
     'input-host.discovered-item.reference': 'Opaque value the plugin uses to retrieve the item; preserved exactly.',
-    'input-host.discovered-item.delegation': 'Optional opaque handoff reference for another Input plugin.',
+    'input-host.discovered-item.source': 'Optional source to route through the normal Input lifecycle.',
     'input-host.discovered-item.size-bytes': 'Optional known or estimated total item size in bytes.',
     'input-host.discovered-item.size-estimated': 'Whether the supplied item size is an estimate.',
     'input-host.discovered-item.metadata': 'Plugin-owned metadata facets associated with this item.',
@@ -49,7 +50,7 @@ RECORD_DOCS: dict[str, str] = {
     'discovery-batch': 'Items to save together with a discovery checkpoint.',
     'discovery-continuation': 'A restart point for an unfinished discovery run, with no credentials.',
     'discovery-refresh-state': 'A baseline shared between successfully completed discovery runs.',
-    'input-delegation': 'An opaque reference for another Input plugin to resolve.',
+    'source': 'An opaque reference and plugin-defined values understood by an Input.',
     'outcome-diagnostic': 'An explanation of a result, with supporting metadata.',
     'acquisition-options': 'Settings and credentials for saving an item.',
     'acquisition-result': 'Saved outputs and a description of any missing work.',
@@ -148,7 +149,6 @@ FIELD_DOCS = {
     'values': 'Named values returned by the operation.',
     'name': 'Name used to select this entry.',
     'revision': 'Revision of the capability definition.',
-    'delegation': 'Reference for another Input plugin; null when no handoff is needed.',
 }
 RECORD_FIELD_DOCS: dict[str, str] = {
     'discovery-continuation.value': 'Plugin-owned restart data that works across processes and contains no credentials.',
@@ -184,8 +184,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     arguments = parser.parse_args()
+    dependency = ROOT / 'vendor/stashd/plugin-api'
+    lock = json.loads((ROOT / 'composer.lock').read_text())
+    package = next(item for item in lock['packages'] if item['name'] == 'stashd/plugin-api')
+    reference = '585e4a377935d9ec46b38572f65e6ec72983860b'
+    if package['source']['reference'] != reference:
+        raise SystemExit('Unexpected plugin-api dependency reference')
+    hashes = {'wit-schema.json': '87c4af58c5cf4f73c13b9500b25f112771dcd4b06d7f92fabd6f352155dd8f5a', 'rpc-v1-vectors.json': 'e9a019130d4cba7ca5816280111e5fbb912898509fb91159ae22949063e55b83', 'helper-process-vectors.json': 'b5b3d8b875e716dd6474f6a9e6a0a103945b9666e5739438d2417835bd49e6a7', 'plugin-package.schema.json': 'c7c0e384c1c44190b4ada2ee83d4aedd82b2a329972885e600fab937759d7388'}
+    for local, upstream in [('wit-schema.json', 'schema/wit-schema.json'), ('plugin-package.schema.json', 'schema/plugin-package.schema.json'), ('rpc-v1-vectors.json', 'protocol/rpc-v1-vectors.json'), ('helper-process-vectors.json', 'protocol/helper-process-vectors.json')]:
+        if (ROOT / 'resources/contract' / local).read_bytes() != (dependency / upstream).read_bytes():
+            raise SystemExit('Contract snapshot differs from installed plugin-api: ' + local)
+        if hashlib.sha256((dependency / upstream).read_bytes()).hexdigest() != hashes[local]:
+            raise SystemExit('Installed contract artifact differs from verified commit: ' + local)
+    installed = json.loads((ROOT / 'vendor/composer/installed.json').read_text())
+    installed_package = next(item for item in installed['packages'] if item['name'] == 'stashd/plugin-api')
+    if installed_package['source']['reference'] != reference:
+        raise SystemExit('Installed plugin-api reference differs from the verified contract')
     schema = json.loads(SCHEMA.read_text())
-    if schema['package'] != 'stashd:plugin@0.18.0':
+    if schema['package'] != 'stashd:plugin@0.19.0':
         raise SystemExit('Unexpected frozen contract identity')
     interfaces = {}
     for contract in schema['contracts']:
@@ -224,6 +240,24 @@ def main():
         namespace = PREFIX + '\\' + pascal(interface)
         def prose(name: str, fallback: str) -> str:
             return HELPER_DOCS.get(interface + '.' + name, HELPER_DOCS.get(name, fallback))
+
+        methods = [(pascal(function['name']), function['name']) for function in definition['functions']]
+        for resource in definition['resources']:
+            methods.extend((pascal(resource['name']) + pascal(function['name']), resource['name'] + '.' + function['name'])
+                           for function in resource['functions'])
+        if methods:
+            if len({case for case, _ in methods}) != len(methods):
+                raise SystemExit('RPC method enum case collision in ' + interface)
+            classname = pascal(interface) + 'Method'
+            lines = ['<?php', '', 'declare(strict_types=1);', '', 'namespace ' + namespace + ';', '',
+                     '/**', ' * RPC operations declared by the ' + interface + ' interface.', ' */',
+                     'enum ' + classname + ': string', '{']
+            package = schema['package'].split('@', 1)[0]
+            for case, method in methods:
+                lines.extend(['    /**', '     * Identifies the ' + method.replace('-', ' ') + ' wire operation.', '     */',
+                              '    case ' + case + " = '" + package + '/' + interface + '.' + method + "';"])
+            lines.extend(['}', ''])
+            outputs[ROOT / 'src/Contract' / pascal(interface) / (classname + '.php')] = '\n'.join(lines)
 
         for name, record in definition['records'].items():
             classname = pascal(name)

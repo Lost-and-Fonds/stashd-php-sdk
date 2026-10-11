@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Contract\InputPlugin;
 
+use Stashd\PluginSdk\Contract\InputHost\OptionValue;
+
 /**
  * A named setting for finding or saving items.
  */

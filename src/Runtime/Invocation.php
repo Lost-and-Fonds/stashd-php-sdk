@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime;
 
+use BackedEnum;
 use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\Runtime\Codec\Envelope;
 use Stashd\PluginSdk\Runtime\Codec\FrameChannel;
+use Stashd\PluginSdk\Runtime\Codec\Json;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
 use Stashd\PluginSdk\Runtime\Resource\ResourceTable;
 use stdClass;
@@ -38,6 +40,21 @@ final class Invocation
      * A closed invocation cannot issue callbacks or release requests.
      */
     private bool $active = true;
+    /**
+     * Sticky cancellation observed in validated helper polls.
+     */
+    private bool $cancelRequested = false;
+
+    /**
+     * Reject cancellation regression across helpers in this invocation.
+     */
+    public function observeCancellation(bool $requested): void
+    {
+        if ($this->cancelRequested && !$requested) {
+            $this->violate('Invocation cancellation flag regressed');
+        }
+        $this->cancelRequested = $requested;
+    }
 
     /**
      * Establish the invocation before dispatching author code.
@@ -61,12 +78,34 @@ final class Invocation
      * Issue one canonical imported call and require its exact response before allowing another call.
      * Payload validation and resource transfer are performed by the focused capability codec.
      * @param list<array{string, string}> $transfers
+     * @param array{string, string}|null $prepared Exact previously prepared request.
      */
-    public function call(string $method, stdClass $params, array $transfers = []): mixed
+    public function call(string|BackedEnum $method, stdClass $params, array $transfers = [], ?callable $committed = null, ?array $prepared = null): mixed
     {
+        if ($method instanceof BackedEnum) {
+            $method = $method->value;
+        }
+
+        if (!is_string($method)) {
+            throw new ProtocolViolation('RPC method must have a string wire value');
+        }
+
         if (!$this->active) {
             throw new ProtocolViolation('Capability call outside active invocation');
         }
+
+        if ($prepared !== null) {
+            $frame = Json::decode($prepared[1]);
+            $expected = $this->prepare($method, $params);
+
+            if ($prepared !== $expected || !$frame instanceof stdClass || $frame->id !== $prepared[0]) {
+                throw new ProtocolViolation('Prepared request is stale or does not match its arguments');
+            }
+        } else {
+            $prepared = $this->prepare($method, $params);
+        }
+        $correlation = $prepared[0];
+        $this->resources->validateTransfers($this->id, $transfers);
 
         try {
             $interface = explode('.', $method, 2)[0];
@@ -75,16 +114,11 @@ final class Invocation
                 throw new ProtocolViolation('Capability is not granted to this lifecycle');
             }
 
-            do {
-                $correlation = 'plugin-' . ++$this->sequence;
-            } while (isset($this->used[$correlation]));
-
-            $this->resources->validateTransfers($this->id, $transfers);
+            $this->sequence = (int) substr($correlation, 7);
             $this->used[$correlation] = true;
             $context = ['invocation' => $this->id, 'id' => $correlation, 'method' => $method];
             $this->trace->emit(TraceLevel::Verbose, 'capability.start', $context);
-            $this->channel->write((object) ['protocol' => 1, 'kind' => 'request', 'id' => $correlation,
-                'invocation' => $this->id, 'method' => $method, 'params' => $params]);
+            $this->channel->writePrepared($prepared[1]);
 
             foreach ($transfers as [$id, $type]) {
                 $this->resources->transfer($this->id, $id, $type);
@@ -92,6 +126,9 @@ final class Invocation
                     'resource-id' => $id, 'resource-type' => $type]);
             }
 
+            if ($committed !== null) {
+                $committed();
+            }
             $response = $this->channel->read() ?? throw new ProtocolViolation('Host closed during capability call');
             Envelope::response($response, $correlation, $this->id);
             $this->resources->endCall($correlation);
@@ -114,7 +151,7 @@ final class Invocation
      * @param array<string, mixed> $resultType
      * @param array<string, mixed> $values
      */
-    public function typedCall(string $method, array $values, array $arguments, array $resultType, string $interface, ?string $writerId = null): mixed
+    public function typedCall(string|BackedEnum $method, array $values, array $arguments, array $resultType, string $interface, ?string $writerId = null): mixed
     {
         $transfers = [];
         $params = new stdClass();
@@ -141,7 +178,7 @@ final class Invocation
      * @param list<array{string, string}> $transfers
      * @param array<string, mixed> $resultType
      */
-    private function callWithTransfer(string $method, stdClass $params, array $transfers, array $resultType, string $interface, ?string $writerId): mixed
+    private function callWithTransfer(string|BackedEnum $method, stdClass $params, array $transfers, array $resultType, string $interface, ?string $writerId): mixed
     {
         $result = $this->call($method, $params, $transfers);
 
@@ -154,6 +191,49 @@ final class Invocation
 
     /**
      * Reject use of a completed plugin call before returning saved resources.
+     */
+    /**
+     * Return the negotiated peer payload capacity for bounded allocation.
+     */
+    public function sendMaximum(): int
+    {
+        return $this->channel->sendMaximum();
+    }
+
+    /**
+     * Prepare the complete encoded request using the next unconsumed correlation ID.
+     * @return array{string, string}
+     */
+    public function prepare(string|BackedEnum $method, stdClass $params): array
+    {
+        $this->requireActive();
+        $method = $method instanceof BackedEnum ? $method->value : $method;
+        $sequence = $this->sequence;
+
+        do {
+            $correlation = 'plugin-' . ++$sequence;
+        } while (isset($this->used[$correlation]));
+
+        return [$correlation, $this->channel->prepare((object) ['protocol' => 1, 'kind' => 'request', 'id' => $correlation, 'invocation' => $this->id, 'method' => $method, 'params' => $params])];
+    }
+
+    /**
+     * Decode host data while permanently revoking malformed response authority.
+     * @template T
+     * @param callable(): T $decoder Response decoder.
+     * @return T
+     */
+    public function decode(callable $decoder): mixed
+    {
+        try {
+            return $decoder();
+        } catch (ProtocolViolation $error) {
+            $this->violate($error->getMessage());
+        }
+    }
+
+    /**
+     * Reject capability access after completion or protocol failure.
      */
     public function requireActive(): void
     {

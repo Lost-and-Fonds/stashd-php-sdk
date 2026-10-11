@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Enrichment;
 
 use InvalidArgumentException;
+use Stashd\PluginSdk\Contract\EnrichmentHost\EnrichmentHostMethod;
 use Stashd\PluginSdk\Helper\Credential;
 use Stashd\PluginSdk\Helper\Stream;
-use Stashd\PluginSdk\Helpers;
 use Stashd\PluginSdk\Runtime\Codec\Generated\EnrichmentHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
 use Stashd\PluginSdk\Runtime\Codec\Values;
@@ -15,6 +15,7 @@ use Stashd\PluginSdk\Runtime\HostFailure;
 use Stashd\PluginSdk\Runtime\Invocation;
 use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 use Stashd\PluginSdk\Shared\Asset;
+use Stashd\PluginSdk\Tools;
 use stdClass;
 
 /**
@@ -25,46 +26,37 @@ final readonly class Request
     /**
      * Create a request to enrich the selected item.
      *
-     * @param Helpers $helpers Tools and credentials available during this call.
+     * @param Item $item Saved item being enriched.
+     * @param string $capabilityId Selected plugin-defined capability ID.
+     * @param string $capabilityRevision Version of the selected capability.
+     * @param list<Selection> $configuration Caller-selected options.
+     * @param Tools $tools Tools and credentials available during this call.
      * @param Invocation $invocation Active call used to read the supplied assets.
-     * @param list<Selection> $configuration
      */
     public function __construct(
-        /**
-         * Saved item being enriched.
-         */
         public Item $item,
-        /**
-         * Selected plugin-defined capability ID.
-         */
         public string $capabilityId,
-        /**
-         * Version of the selected capability.
-         */
         public string $capabilityRevision,
-        /**
-         * Caller-selected options. @var list<Selection>
-         */
         public array $configuration,
-        private Helpers $helpers,
+        private Tools $tools,
         private Invocation $invocation,
     ) {}
 
     /**
-     * Return helper and staging tools.
+     * Return credential selectors available for this operation.
      */
-    public function helpers(): Helpers
+    public function tools(): Tools
     {
-        return $this->helpers;
+        return $this->tools;
     }
 
     /**
-     * Return credential selectors available for this operation.
+     * Return credentials available during this call.
      * @return list<Credential>
      */
     public function credentials(): array
     {
-        return $this->helpers->credentials();
+        return $this->tools->credentials;
     }
 
     /**
@@ -76,7 +68,7 @@ final readonly class Request
             throw new InvalidArgumentException('Asset byte range cannot be negative');
         }
 
-        $result = $this->invocation->call('stashd:plugin/enrichment-host.open-asset', (object) [
+        $result = $this->invocation->call(EnrichmentHostMethod::OpenAsset, (object) [
             'reference' => $asset->reference,
             'offset' => (string) $offset,
             'length' => $length === null ? null : (string) $length,
@@ -86,13 +78,13 @@ final readonly class Request
             $this->invocation->violate('Asset open requires a result');
         }
 
-        $result = Values::record($result, property_exists($result, 'error') ? ['error'] : ['ok']);
+        $result = $this->invocation->decode(static fn() => Values::record($result, property_exists($result, 'error') ? ['error'] : ['ok']));
 
         if (property_exists($result, 'error')) {
-            throw new HostFailure(EnrichmentHostCodec::decodeAssetError($result->error));
+            throw new HostFailure($this->invocation->decode(static fn() => EnrichmentHostCodec::decodeAssetError($result->error)));
         }
 
-        $stream = ResourceValueCodec::decode($result->ok, ['kind' => 'named', 'name' => 'byte-stream'], 'io-host', $this->invocation);
+        $stream = $this->invocation->decode(fn() => ResourceValueCodec::decode($result->ok, ['kind' => 'named', 'name' => 'byte-stream'], 'io-host', $this->invocation));
 
         if (!$stream instanceof RemoteByteStream) {
             $this->invocation->violate('Asset open did not return a stream');

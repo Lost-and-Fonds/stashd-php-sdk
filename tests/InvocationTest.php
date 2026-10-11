@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Stashd\PluginSdk\Contract\LoggingHost\LoggingHostMethod;
 use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\Runtime\Codec\FrameChannel;
@@ -16,11 +17,13 @@ it('correlates imported calls independently of an outstanding lifecycle', functi
     $host->write((object) ['protocol' => 1, 'id' => 'plugin-2', 'kind' => 'response', 'invocation' => 'inv', 'result' => null]);
     rewind($input);
     $invocation = new Invocation('inv', 'plugin-1', new FrameChannel($input, $output), new Trace(TraceLevel::Ludicrous, $sink), ['stashd:plugin/logging-host']);
-    expect($invocation->call('stashd:plugin/logging-host.log', (object) ['message' => 'diagnostic']))->toBeNull();
+    expect($invocation->call(LoggingHostMethod::Log, (object) ['message' => 'diagnostic']))->toBeNull();
     rewind($output);
-    expect($host->read()->id)->toBe('plugin-2');
+    $request = $host->read();
+    expect($request->id)->toBe('plugin-2')
+        ->and($request->method)->toBe('stashd:plugin/logging-host.log');
     $invocation->cleanup();
-    expect(fn() => $invocation->call('stashd:plugin/logging-host.log', (object) ['message' => 'late']))->toThrow(ProtocolViolation::class);
+    expect(fn() => $invocation->call(LoggingHostMethod::Log, (object) ['message' => 'late']))->toThrow(ProtocolViolation::class);
     fclose($input);
     fclose($output);
     fclose($sink);
@@ -36,7 +39,7 @@ it('invalidates resources and channel on unmatched imported responses', function
     $channel = new FrameChannel($input, $output);
     $invocation = new Invocation('inv', 'host-1', $channel, new Trace(TraceLevel::Off, $sink), ['stashd:plugin/logging-host']);
     $invocation->resources->accept('inv', 'resource', 'type');
-    expect(fn() => $invocation->call('stashd:plugin/logging-host.log', (object) ['message' => 'test']))->toThrow(ProtocolViolation::class)
+    expect(fn() => $invocation->call(LoggingHostMethod::Log, (object) ['message' => 'test']))->toThrow(ProtocolViolation::class)
         ->and(fn() => $invocation->resources->requireOwned('inv', 'resource', 'type'))->toThrow(ProtocolViolation::class)
         ->and(fn() => $channel->read())->toThrow(ProtocolViolation::class);
     fclose($input);

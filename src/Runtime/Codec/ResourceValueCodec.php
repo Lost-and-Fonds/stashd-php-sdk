@@ -12,6 +12,7 @@ use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use Stashd\PluginSdk\Runtime\Resource\OwnedResource;
 use Stashd\PluginSdk\Runtime\Resource\RemoteByteStream;
 use Stashd\PluginSdk\Runtime\Resource\RemoteHelperProcess;
+use Stashd\PluginSdk\Runtime\Resource\RemoteHostResource;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagingArea;
 use stdClass;
@@ -95,6 +96,8 @@ final class ResourceValueCodec
                 'stashd:plugin/io-host.byte-stream' => new RemoteByteStream($invocation, self::name($marker->id)),
                 'stashd:plugin/io-host.helper-process' => new RemoteHelperProcess($invocation, self::name($marker->id), $writerId),
                 'stashd:plugin/io-host.staging-area' => new RemoteStagingArea($invocation, self::name($marker->id)),
+                'stashd:plugin/broadcast-host.item-collection',
+                'stashd:plugin/broadcast-host.publication-reporter' => new RemoteHostResource($invocation, self::name($marker->id), $type),
                 default => self::unsupportedResource($type),
             };
         }
@@ -180,7 +183,7 @@ final class ResourceValueCodec
                 'string' => Values::text($value),
                 'bool' => Values::boolean($value),
                 'u64' => Values::unsigned($value),
-                's64' => (string) Values::signed($value),
+                's64' => is_int($value) ? (string) $value : throw new ProtocolViolation('Expected native signed integer'),
                 'f32', 'f64' => Values::floating($schema['name'], $value),
                 default => Values::integer(self::name($schema['name']), $value),
             };
@@ -367,9 +370,15 @@ final class ResourceValueCodec
     {
         $contracts = self::sequence(self::schema()['contracts']);
 
+        $allInterfaces = [];
+
+        foreach ($contracts as $contract) {
+            $allInterfaces = array_replace($allInterfaces, self::mapping(self::mapping($contract)['interfaces']));
+        }
+
         foreach ($contracts as $contract) {
             $contract = self::mapping($contract);
-            $interfaces = self::mapping($contract['interfaces']);
+            $interfaces = $allInterfaces;
 
             if (!isset($interfaces[$interface])) {
                 continue;
@@ -427,7 +436,7 @@ final class ResourceValueCodec
                 throw new ProtocolViolation('Pinned WIT schema is invalid JSON', previous: $error);
             }
 
-            if ($schema['package'] !== 'stashd:plugin@0.18.0') {
+            if ($schema['package'] !== 'stashd:plugin@0.19.0') {
                 throw new ProtocolViolation('Unexpected WIT package identity');
             }
         }

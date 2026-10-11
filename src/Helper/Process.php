@@ -9,10 +9,13 @@ use Stashd\PluginSdk\Contract\IoHost\HelperEventOutput;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventStdoutActivity;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventTerminal;
 use Stashd\PluginSdk\Contract\IoHost\HelperOutputStream;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollStateEnd;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollStateEvent;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalCancelled;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalExited;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalFailed;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalTimedOut;
+use Stashd\PluginSdk\Runtime\Codec\AuthorValues;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use Stashd\PluginSdk\Runtime\Resource\RemoteHelperProcess;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
@@ -31,19 +34,48 @@ final class Process
 
     /**
      * Read events as they happen. Iteration yields output or activity, then one final outcome, and stops at EOF.
-     * @return Generator<int, Output|StdoutActivity|Exited|Cancelled|TimedOut|Failed>
+     * @return Generator<int, Output|StdoutActivity|Exited|Cancelled|TimedOut|Failed|CancelRequested>
      */
     public function events(): Generator
     {
-        while (($event = $this->process->nextEvent()) !== null) {
+        $notified = false;
+
+        while (true) {
+            $poll = $this->poll();
+
+            if ($poll->cancelRequested && !$notified) {
+                $notified = true;
+                yield new CancelRequested();
+            }
+
+            if ($poll->event !== null) {
+                yield $poll->event;
+            }
+
+            if ($poll->ended) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Wait at most the host polling bound and expose invocation cancellation.
+     */
+    public function poll(int $waitMs = 1000): Poll
+    {
+        $result = $this->process->nextEvent($waitMs);
+        $event = $result->state instanceof HelperPollStateEvent ? $result->state->value : null;
+        $public = null;
+
+        if ($event !== null) {
             if ($event instanceof HelperEventOutput) {
-                yield new Output($event->value->channel === HelperOutputStream::Stdout ? OutputStream::Stdout : OutputStream::Stderr, pack('C*', ...$event->value->bytes));
+                $public = new Output($event->value->channel === HelperOutputStream::Stdout ? OutputStream::Stdout : OutputStream::Stderr, pack('C*', ...$event->value->bytes));
             } elseif ($event instanceof HelperEventStdoutActivity) {
-                yield new StdoutActivity((int) $event->value);
+                $public = new StdoutActivity(AuthorValues::authorSize($event->value));
             } elseif ($event instanceof HelperEventTerminal) {
                 $terminal = $event->value;
 
-                yield match (true) {
+                $public = match (true) {
                     $terminal instanceof HelperTerminalExited => new Exited($terminal->value->code, $terminal->value->output instanceof RemoteStagedWriter ? new Writer($terminal->value->output) : null),
                     $terminal instanceof HelperTerminalCancelled => new Cancelled(),
                     $terminal instanceof HelperTerminalTimedOut => new TimedOut(),
@@ -52,6 +84,8 @@ final class Process
                 };
             }
         }
+
+        return new Poll($result->invocationCancelRequested, $result->state instanceof HelperPollStateEnd, $public);
     }
 
     /**

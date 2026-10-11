@@ -40,6 +40,44 @@ it('generates readonly records with documented promoted properties in schema ord
     }
 });
 
+it('generates exact method enums for interface and resource operations', function (): void {
+    $schema = json_decode(file_get_contents(__DIR__ . '/../resources/contract/wit-schema.json'), true, flags: JSON_THROW_ON_ERROR);
+    $className = static fn(string $name): string => str_replace(' ', '', ucwords(str_replace(['-', '.'], ' ', $name)));
+    $package = explode('@', $schema['package'])[0];
+
+    foreach ($schema['contracts'] as $contract) {
+        foreach ($contract['interfaces'] as $interface => $definition) {
+            $expected = [];
+
+            foreach ($definition['functions'] as $function) {
+                $expected[$className($function['name'])] = $package . '/' . $interface . '.' . $function['name'];
+            }
+
+            foreach ($definition['resources'] as $resource) {
+                foreach ($resource['functions'] as $function) {
+                    $expected[$className($resource['name']) . $className($function['name'])] = $package . '/' . $interface . '.' . $resource['name'] . '.' . $function['name'];
+                }
+            }
+
+            if ($expected === []) {
+                continue;
+            }
+
+            $enum = 'Stashd\\PluginSdk\\Contract\\' . $className($interface) . '\\' . $className($interface) . 'Method';
+            $actual = [];
+
+            foreach ($enum::cases() as $case) {
+                $actual[$case->name] = $case->value;
+                expect($enum::tryFrom($case->value))->toBe($case);
+            }
+
+            expect($actual)->toBe($expected)
+                ->and($enum::tryFrom($package . '/' . $interface . '.unknown-method'))->toBeNull()
+                ->and($enum::tryFrom('resolve'))->toBeNull();
+        }
+    }
+});
+
 it('rejects contract byte counts that PHP cannot represent in author values', function (): void {
     $value = Json::decode('{"reference":"opaque-stage-1","media-type":null,"size-bytes":"18446744073709551615","metadata":[]}');
     expect(fn() => IoHostCodec::decodeStagedArtifact($value))->toThrow(ProtocolViolation::class);

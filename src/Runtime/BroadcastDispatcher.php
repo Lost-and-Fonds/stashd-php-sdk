@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime;
 
 use Stashd\PluginSdk\Broadcast\Action;
+use Stashd\PluginSdk\Broadcast\Failure;
 use Stashd\PluginSdk\Broadcast\Publish;
 use Stashd\PluginSdk\BroadcastPlugin;
+use Stashd\PluginSdk\Contract\BroadcastPlugin\BroadcastPluginMethod;
 use Stashd\PluginSdk\Helper\Credential;
-use Stashd\PluginSdk\Helpers;
 use Stashd\PluginSdk\Runtime\Codec\BroadcastAuthorCodec;
 use Stashd\PluginSdk\Runtime\Codec\Generated\BroadcastPluginCodec;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
 use Stashd\PluginSdk\Runtime\Codec\Values;
 use Stashd\PluginSdk\Runtime\Resource\RemoteHostResource;
+use Stashd\PluginSdk\Tools;
 use stdClass;
 
 /**
@@ -25,13 +27,16 @@ final class BroadcastDispatcher
     /**
      * Decode the requested lifecycle and return its host result.
      */
-    public function invoke(BroadcastPlugin $plugin, string $method, stdClass $params, Invocation $invocation): stdClass
+    public function invoke(BroadcastPlugin $plugin, BroadcastPluginMethod $method, stdClass $params, Invocation $invocation): stdClass
     {
-        return match ($method) {
-            'stashd:plugin/broadcast-plugin.operation' => $this->action($plugin, $params, $invocation),
-            'stashd:plugin/broadcast-plugin.publish' => $this->publish($plugin, $params, $invocation),
-            default => throw new ProtocolViolation('Unsupported Broadcast lifecycle method'),
-        };
+        try {
+            return match ($method) {
+                BroadcastPluginMethod::Operation => $this->action($plugin, $params, $invocation),
+                BroadcastPluginMethod::Publish => $this->publish($plugin, $params, $invocation),
+            };
+        } catch (Failure $failure) {
+            return (object) ['error' => (object) ['tag' => 'failed', 'value' => (object) ['message' => $failure->getMessage(), 'retryable' => $failure->retryable]]];
+        }
     }
 
     /**
@@ -64,13 +69,16 @@ final class BroadcastDispatcher
 
         $publish = new Publish($invocation, $collection, $reporter, Values::integer('u32', $request->{'maximum-report-records-per-batch'}), BroadcastAuthorCodec::settings($configuration->settings), $this->helpers($invocation, $record->credentials));
 
-        return BroadcastAuthorCodec::publication($plugin->publish($publish));
+        $publication = $plugin->publish($publish);
+        $publish->requireComplete();
+
+        return BroadcastAuthorCodec::publication($publication);
     }
 
     /**
      * Convert credential references into selectors rather than exposing secrets.
      */
-    private function helpers(Invocation $invocation, mixed $wire): Helpers
+    private function helpers(Invocation $invocation, mixed $wire): Tools
     {
         $credentials = [];
 
@@ -79,6 +87,6 @@ final class BroadcastDispatcher
             $credentials[] = new Credential($binding->name, $binding->reference->id);
         }
 
-        return new Helpers($invocation, $credentials);
+        return new Tools($invocation, $credentials);
     }
 }

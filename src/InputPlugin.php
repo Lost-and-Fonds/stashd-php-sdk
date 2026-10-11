@@ -8,8 +8,8 @@ use Stashd\PluginSdk\Input\Acquisition;
 use Stashd\PluginSdk\Input\AcquisitionResult;
 use Stashd\PluginSdk\Input\Discovery;
 use Stashd\PluginSdk\Input\Resolve;
-use Stashd\PluginSdk\Input\ResolveDelegation;
 use Stashd\PluginSdk\Input\ResolvedInput;
+use Stashd\PluginSdk\Input\Source;
 
 /**
  * Identify sources, discover their items in batches, and save selected items.
@@ -22,9 +22,9 @@ interface InputPlugin
     public function resolve(Resolve $request): ResolvedInput;
 
     /**
-     * Identify a reference handed off by another Input plugin.
+     * Check whether this source is understood without host calls or credentials.
      */
-    public function resolveDelegation(ResolveDelegation $request): ResolvedInput;
+    public function canResolve(Source $source): bool;
 
     /**
      * Find items and save batches with a restart point, then save the final result.

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime\Codec;
 
+use Stashd\PluginSdk\Contract\InputHost\OptionValueBoolean;
+use Stashd\PluginSdk\Contract\InputHost\OptionValueNumber;
+use Stashd\PluginSdk\Contract\InputHost\OptionValueText;
 use Stashd\PluginSdk\Contract\InputPlugin\InputOption;
-use Stashd\PluginSdk\Contract\InputPlugin\OptionValueBoolean;
-use Stashd\PluginSdk\Contract\InputPlugin\OptionValueNumber;
-use Stashd\PluginSdk\Contract\InputPlugin\OptionValueText;
 use Stashd\PluginSdk\Input\AcquisitionResult;
 use Stashd\PluginSdk\Input\DiscoveredItem;
 use Stashd\PluginSdk\Input\Discovery;
@@ -15,7 +15,6 @@ use Stashd\PluginSdk\Input\Option;
 use Stashd\PluginSdk\Input\ResolvedInput;
 use Stashd\PluginSdk\Input\Source;
 use Stashd\PluginSdk\Runtime\Codec\Generated\InputHostCodec;
-use Stashd\PluginSdk\Runtime\Codec\Generated\InputPluginCodec;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
@@ -29,20 +28,39 @@ final class InputAuthorCodec
      */
     public static function source(mixed $wire): Source
     {
-        return new Source(array_map(static function (mixed $entry): Option {
-            $value = InputPluginCodec::decodeSourceValue($entry);
+        $source = InputHostCodec::decodeSource($wire);
 
-            return new Option($value->key, self::option($value->value));
-        }, Values::list($wire)));
+        return new Source($source->reference, array_map(static fn($value): Option => new Option($value->key, self::option($value->value)), $source->values));
     }
 
     /**
      * Decode ordered settings shared by discovery and acquisition.
      * @param list<InputOption> $wire
+     * @return list<Option>
      */
-    public static function options(array $wire): Source
+    public static function options(array $wire): array
     {
-        return new Source(array_map(static fn(InputOption $value): Option => new Option($value->key, self::option($value->value)), $wire));
+        return array_map(static fn(InputOption $value): Option => new Option($value->key, self::option($value->value)), $wire);
+    }
+
+    /**
+     * Preserve a source reference and ordered settings when emitting a discovered source.
+     */
+    public static function encodeSource(Source $source): stdClass
+    {
+        $wire = (object) [
+            'reference' => $source->reference,
+            'values' => array_map(static fn(Option $option): stdClass => (object) [
+                'key' => $option->key,
+                'value' => (object) ['tag' => match (true) {
+                    is_bool($option->value) => 'boolean',
+                    is_int($option->value) => 'number',
+                    default => 'text',
+                }, 'value' => is_int($option->value) ? (string) $option->value : $option->value],
+            ], $source->values),
+        ];
+
+        return InputHostCodec::encodeSource(InputHostCodec::decodeSource($wire));
     }
 
     /**
@@ -69,13 +87,13 @@ final class InputAuthorCodec
     }
 
     /**
-     * Decode an independently acquired item, including delegation and metadata.
+     * Decode an independently acquired item, including its optional source and metadata.
      */
     public static function item(mixed $wire): DiscoveredItem
     {
         $item = InputHostCodec::decodeDiscoveredItem($wire);
 
-        return new DiscoveredItem($item->id, $item->reference, $item->delegation?->reference, $item->sizeBytes === null ? null : AuthorValues::authorSize($item->sizeBytes), $item->sizeEstimated, array_map(AuthorValues::metadata(...), $item->metadata));
+        return new DiscoveredItem($item->id, $item->reference, $item->source === null ? null : self::source(InputHostCodec::encodeSource($item->source)), $item->sizeBytes === null ? null : AuthorValues::authorSize($item->sizeBytes), $item->sizeEstimated, array_map(AuthorValues::metadata(...), $item->metadata));
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Stashd\PluginSdk\Contract\IoHost\HelperEventOutput;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventStdoutActivity;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventTerminal;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollStateEnd;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalExited;
 use Stashd\PluginSdk\Diagnostics\Trace;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
@@ -29,6 +30,9 @@ function helperFixture(array $results, int $maximum = 4096): array
     $host->negotiate($maximum, $maximum);
 
     foreach ($results as $index => $result) {
+        if ($result instanceof stdClass && isset($result->tag)) {
+            $result = (object) ['invocation-cancel-requested' => false, 'state' => (object) ['tag' => 'event', 'value' => $result]];
+        }
         $host->write((object) ['protocol' => 1, 'kind' => 'response', 'id' => 'plugin-' . ($index + 1),
             'invocation' => 'inv', 'result' => $result]);
     }
@@ -74,12 +78,13 @@ it('consumes every canonical unstaged helper event sequence and keeps terminal t
         $events = array_map(helperEventWire(...), $vector['events']);
         $results = [(object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')]];
         array_push($results, ...$events);
-        $results[] = null;
+        $results[] = (object) ['invocation-cancel-requested' => false, 'state' => 'end'];
+        $results[] = (object) ['invocation-cancel-requested' => false, 'state' => 'end'];
         [$invocation, $host, $input, $output, $sink] = helperFixture($results);
         $process = HelperProcessCall::start($invocation, 'approved', [], null, null, []);
 
         foreach ($events as $wire) {
-            $event = $process->nextEvent();
+            $event = $process->nextEvent()->state->value;
             expect($event)->toBeInstanceOf($wire->tag === 'output' ? HelperEventOutput::class : HelperEventTerminal::class);
 
             if ($event instanceof HelperEventOutput) {
@@ -87,7 +92,7 @@ it('consumes every canonical unstaged helper event sequence and keeps terminal t
             }
         }
 
-        expect($process->nextEvent())->toBeNull()->and($process->nextEvent())->toBeNull();
+        expect($process->nextEvent()->state)->toBeInstanceOf(HelperPollStateEnd::class)->and($process->nextEvent()->state)->toBeInstanceOf(HelperPollStateEnd::class);
         $invocation->cleanup();
         fclose($input);
         fclose($output);
@@ -100,7 +105,7 @@ it('returns only the transferred staged writer after the canonical staged termin
     $events = array_map(helperEventWire(...), $vectors['staged_stdout']['events']);
     $results = [(object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')]];
     array_push($results, ...$events);
-    $results[] = null;
+    $results[] = (object) ['invocation-cancel-requested' => false, 'state' => 'end'];
     [$invocation, $host, $input, $output, $sink] = helperFixture($results);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new RemoteStagedWriter($invocation, 'writer-1');
@@ -108,7 +113,7 @@ it('returns only the transferred staged writer after the canonical staged termin
     expect(fn() => $writer->close())->toThrow(ProtocolViolation::class);
 
     foreach ($events as $wire) {
-        $event = $process->nextEvent();
+        $event = $process->nextEvent()->state->value;
 
         if ($wire->tag === 'stdout-activity') {
             expect($event)->toBeInstanceOf(HelperEventStdoutActivity::class)->and($event->value)->toBe($wire->value);
@@ -123,7 +128,7 @@ it('returns only the transferred staged writer after the canonical staged termin
         }
     }
 
-    expect($process->nextEvent())->toBeNull();
+    expect($process->nextEvent()->state)->toBeInstanceOf(HelperPollStateEnd::class);
     $invocation->cleanup();
     fclose($input);
     fclose($output);
@@ -215,7 +220,7 @@ it('measures the complete response envelope for the canonical segmented output v
     $chunks = array_map(helperEventWire(...), $vector['events']);
     $results = [(object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')]];
     array_push($results, ...$chunks);
-    $results[] = null;
+    $results[] = (object) ['invocation-cancel-requested' => false, 'state' => 'end'];
     [$invocation, $host, $input, $output, $sink] = helperFixture($results, $vector['frame_max_bytes']);
     $process = HelperProcessCall::start($invocation, 'approved', [], null, null, []);
     $bytes = [];
@@ -224,7 +229,7 @@ it('measures the complete response envelope for the canonical segmented output v
         $envelope = (object) ['protocol' => 1, 'kind' => 'response', 'id' => 'plugin-' . ($index + 2),
             'invocation' => 'inv', 'result' => $chunk];
         expect(strlen(Json::encode($envelope)))->toBeLessThanOrEqual($vector['frame_max_bytes']);
-        $event = $process->nextEvent();
+        $event = $process->nextEvent()->state->value;
 
         if ($event instanceof HelperEventOutput) {
             array_push($bytes, ...$event->value->bytes);
@@ -233,7 +238,7 @@ it('measures the complete response envelope for the canonical segmented output v
 
     expect($bytes)->toHaveCount($vector['logical_output_byte_count'])
         ->and($bytes)->toBe(array_merge(...array_fill(0, 20, range(0, 255))))
-        ->and($process->nextEvent())->toBeNull();
+        ->and($process->nextEvent()->state)->toBeInstanceOf(HelperPollStateEnd::class);
     $invocation->cleanup();
     fclose($input);
     fclose($output);

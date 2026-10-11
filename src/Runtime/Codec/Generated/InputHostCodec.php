@@ -22,8 +22,13 @@ use Stashd\PluginSdk\Contract\InputHost\DiscoveryProgress;
 use Stashd\PluginSdk\Contract\InputHost\DiscoveryProgressFinished;
 use Stashd\PluginSdk\Contract\InputHost\DiscoveryProgressMore;
 use Stashd\PluginSdk\Contract\InputHost\DiscoveryRefreshState;
-use Stashd\PluginSdk\Contract\InputHost\InputDelegation;
+use Stashd\PluginSdk\Contract\InputHost\OptionValue;
+use Stashd\PluginSdk\Contract\InputHost\OptionValueBoolean;
+use Stashd\PluginSdk\Contract\InputHost\OptionValueNumber;
+use Stashd\PluginSdk\Contract\InputHost\OptionValueText;
 use Stashd\PluginSdk\Contract\InputHost\OutcomeDiagnostic;
+use Stashd\PluginSdk\Contract\InputHost\Source;
+use Stashd\PluginSdk\Contract\InputHost\SourceValue;
 use Stashd\PluginSdk\Contract\IoHost\PluginMetadata;
 use Stashd\PluginSdk\Runtime\Codec\Values;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
@@ -63,12 +68,12 @@ final class InputHostCodec
      */
     public static function decodeDiscoveredItem(mixed $value): DiscoveredItem
     {
-        $record = Values::record($value, ['id', 'reference', 'delegation', 'size-bytes', 'size-estimated', 'metadata']);
+        $record = Values::record($value, ['id', 'reference', 'source', 'size-bytes', 'size-estimated', 'metadata']);
 
         return new DiscoveredItem(
             Values::text($record->{'id'}),
             Values::text($record->{'reference'}),
-            ($record->{'delegation'} === null ? null : InputHostCodec::decodeInputDelegation($record->{'delegation'})),
+            ($record->{'source'} === null ? null : InputHostCodec::decodeSource($record->{'source'})),
             ($record->{'size-bytes'} === null ? null : Values::unsigned($record->{'size-bytes'})),
             Values::boolean($record->{'size-estimated'}),
             array_map(static fn(mixed $element) => IoHostCodec::decodePluginMetadata($element), Values::list($record->{'metadata'})),
@@ -83,7 +88,7 @@ final class InputHostCodec
         return (object) [
             'id' => $value->id,
             'reference' => $value->reference,
-            'delegation' => ($value->delegation === null ? null : InputHostCodec::encodeInputDelegation($value->delegation)),
+            'source' => ($value->source === null ? null : InputHostCodec::encodeSource($value->source)),
             'size-bytes' => ($value->sizeBytes === null ? null : $value->sizeBytes),
             'size-estimated' => $value->sizeEstimated,
             'metadata' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->metadata),
@@ -161,28 +166,6 @@ final class InputHostCodec
     /**
      * Read the expected fields, rejecting missing or extra fields.
      */
-    public static function decodeInputDelegation(mixed $value): InputDelegation
-    {
-        $record = Values::record($value, ['reference']);
-
-        return new InputDelegation(
-            Values::text($record->{'reference'}),
-        );
-    }
-
-    /**
-     * Write the field names expected by the host.
-     */
-    public static function encodeInputDelegation(InputDelegation $value): stdClass
-    {
-        return (object) [
-            'reference' => $value->reference,
-        ];
-    }
-
-    /**
-     * Read the expected fields, rejecting missing or extra fields.
-     */
     public static function decodeOutcomeDiagnostic(mixed $value): OutcomeDiagnostic
     {
         $record = Values::record($value, ['message', 'evidence']);
@@ -201,6 +184,54 @@ final class InputHostCodec
         return (object) [
             'message' => $value->message,
             'evidence' => array_map(static fn(PluginMetadata $element) => IoHostCodec::encodePluginMetadata($element), $value->evidence),
+        ];
+    }
+
+    /**
+     * Read the expected fields, rejecting missing or extra fields.
+     */
+    public static function decodeSource(mixed $value): Source
+    {
+        $record = Values::record($value, ['reference', 'values']);
+
+        return new Source(
+            ($record->{'reference'} === null ? null : Values::text($record->{'reference'})),
+            array_map(static fn(mixed $element) => InputHostCodec::decodeSourceValue($element), Values::list($record->{'values'})),
+        );
+    }
+
+    /**
+     * Write the field names expected by the host.
+     */
+    public static function encodeSource(Source $value): stdClass
+    {
+        return (object) [
+            'reference' => ($value->reference === null ? null : $value->reference),
+            'values' => array_map(static fn(SourceValue $element) => InputHostCodec::encodeSourceValue($element), $value->values),
+        ];
+    }
+
+    /**
+     * Read the expected fields, rejecting missing or extra fields.
+     */
+    public static function decodeSourceValue(mixed $value): SourceValue
+    {
+        $record = Values::record($value, ['key', 'value']);
+
+        return new SourceValue(
+            Values::text($record->{'key'}),
+            InputHostCodec::decodeOptionValue($record->{'value'}),
+        );
+    }
+
+    /**
+     * Write the field names expected by the host.
+     */
+    public static function encodeSourceValue(SourceValue $value): stdClass
+    {
+        return (object) [
+            'key' => $value->key,
+            'value' => InputHostCodec::encodeOptionValue($value->value),
         ];
     }
 
@@ -344,6 +375,40 @@ final class InputHostCodec
         return match (true) {
             $value instanceof DiscoveryProgressMore => (object) ['tag' => 'more', 'value' => InputHostCodec::encodeDiscoveryContinuation($value->value)],
             $value instanceof DiscoveryProgressFinished => (object) ['tag' => 'finished', 'value' => InputHostCodec::encodeDiscoveryFinish($value->value)],
+            default => throw new ProtocolViolation('Foreign variant implementation'),
+        };
+    }
+
+    /**
+     * Decode a payloadless string or exact tagged payload, never accepting extra fields.
+     */
+    public static function decodeOptionValue(mixed $value): OptionValue
+    {
+        if (is_string($value)) {
+            return match ($value) {
+                default => throw new ProtocolViolation('Unknown payloadless variant case'),
+            };
+        }
+
+        $record = Values::record($value, ['tag', 'value']);
+
+        return match (Values::text($record->tag)) {
+            'boolean' => new OptionValueBoolean(Values::boolean($record->value)),
+            'number' => new OptionValueNumber(Values::signed($record->value)),
+            'text' => new OptionValueText(Values::text($record->value)),
+            default => throw new ProtocolViolation('Unknown payload-bearing variant case'),
+        };
+    }
+
+    /**
+     * Write a supported result type, rejecting unrecognized implementations.
+     */
+    public static function encodeOptionValue(OptionValue $value): stdClass
+    {
+        return match (true) {
+            $value instanceof OptionValueBoolean => (object) ['tag' => 'boolean', 'value' => $value->value],
+            $value instanceof OptionValueNumber => (object) ['tag' => 'number', 'value' => (string) $value->value],
+            $value instanceof OptionValueText => (object) ['tag' => 'text', 'value' => $value->value],
             default => throw new ProtocolViolation('Foreign variant implementation'),
         };
     }

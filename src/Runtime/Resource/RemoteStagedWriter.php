@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime\Resource;
 
+use LengthException;
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
 use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 use Stashd\PluginSdk\Contract\IoHost\StagedWriter;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
@@ -48,12 +50,54 @@ final class RemoteStagedWriter implements StagedWriter, OwnedResource
 
     /**
      * Append a canonical byte chunk to this unfinished output.
-     * @param list<int> $bytes
+     */
+    public function writeBytes(string $bytes): void
+    {
+        $this->invocation->resources->requireOwned($this->invocation->id, $this->id, 'stashd:plugin/io-host.staged-writer');
+        $offset = 0;
+
+        while ($offset < strlen($bytes)) {
+            $low = 1;
+            $high = min(strlen($bytes) - $offset, $this->invocation->sendMaximum());
+            $accepted = 0;
+            $prepared = null;
+            $params = null;
+
+            while ($low <= $high) {
+                $count = intdiv($low + $high, 2);
+                $chunk = array_map(ord(...), str_split(substr($bytes, $offset, $count)));
+
+                try {
+                    $candidate = (object) ['self' => ResourceValueCodec::handle('stashd:plugin/io-host.staged-writer', $this->id), 'bytes' => $chunk];
+                    $prepared = $this->invocation->prepare(IoHostMethod::StagedWriterWrite, $candidate);
+                    $params = $candidate;
+                    $accepted = $count;
+                    $low = $count + 1;
+                } catch (LengthException) {
+                    $high = $count - 1;
+                }
+            }
+
+            if ($accepted === 0) {
+                throw new LengthException('A staged byte cannot fit the peer frame maximum');
+            }
+
+            if ($params === null || $prepared === null) {
+                throw new LengthException('No writable chunk');
+            }
+            $this->unitResult($this->invocation->call(IoHostMethod::StagedWriterWrite, $params, prepared: $prepared));
+            $offset += $accepted;
+        }
+    }
+
+    /**
+     * Send one canonical byte chunk.
+     * @param list<int> $bytes Bytes to append.
      */
     public function write(array $bytes): void
     {
         $this->invocation->resources->requireOwned($this->invocation->id, $this->id, 'stashd:plugin/io-host.staged-writer');
-        $result = $this->invocation->call('stashd:plugin/io-host.staged-writer.write', (object) [
+        $result = $this->invocation->call(IoHostMethod::StagedWriterWrite, (object) [
             'self' => ResourceValueCodec::handle('stashd:plugin/io-host.staged-writer', $this->id),
             'bytes' => array_map(static fn(int $byte): int => Values::integer('u8', $byte), $bytes),
         ]);
@@ -66,12 +110,11 @@ final class RemoteStagedWriter implements StagedWriter, OwnedResource
     public function finish(): StagedArtifact
     {
         $this->invocation->resources->requireOwned($this->invocation->id, $this->id, 'stashd:plugin/io-host.staged-writer');
-        $result = $this->invocation->call('stashd:plugin/io-host.staged-writer.finish', (object) [
+        $result = $this->invocation->call(IoHostMethod::StagedWriterFinish, (object) [
             'self' => ResourceValueCodec::handle('stashd:plugin/io-host.staged-writer', $this->id),
         ]);
         $value = $this->result($result);
-        $artifact = IoHostCodec::decodeStagedArtifact($value);
-        $this->close();
+        $artifact = $this->invocation->decode(static fn() => IoHostCodec::decodeStagedArtifact($value));
 
         return $artifact;
     }
@@ -112,12 +155,12 @@ final class RemoteStagedWriter implements StagedWriter, OwnedResource
         }
 
         if (property_exists($result, 'error')) {
-            Values::record($result, ['error']);
+            $this->invocation->decode(static fn() => Values::record($result, ['error']));
 
-            throw new HostFailure(IoHostCodec::decodeStagingError($result->error));
+            throw new HostFailure($this->invocation->decode(static fn() => IoHostCodec::decodeStagingError($result->error)));
         }
 
-        Values::record($result, ['ok']);
+        $this->invocation->decode(static fn() => Values::record($result, ['ok']));
 
         return $result->ok;
     }

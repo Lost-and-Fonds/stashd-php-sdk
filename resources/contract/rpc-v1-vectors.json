@@ -1,5 +1,5 @@
 {
-  "package": "stashd:plugin@0.18.0",
+  "package": "stashd:plugin@0.19.0",
   "vectors": [
     {
       "name": "owned-byte-stream-handle",
@@ -532,7 +532,7 @@
             "item": {
               "id": "item-1",
               "reference": "source:item-1",
-              "delegation": null,
+              "source": null,
               "size-bytes": null,
               "size-estimated": false,
               "metadata": []

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime\Resource;
 
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
 use Stashd\PluginSdk\Contract\IoHost\StagedArtifact;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
@@ -44,7 +45,7 @@ final class RemoteStagedArtifact
      */
     public function open(): RemoteByteStream
     {
-        $result = $this->invocation->call('stashd:plugin/io-host.open-staged-artifact', (object) [
+        $result = $this->invocation->call(IoHostMethod::OpenStagedArtifact, (object) [
             'artifact' => IoHostCodec::encodeStagedArtifact($this->receipt), 'offset' => '0', 'length' => null,
         ]);
 

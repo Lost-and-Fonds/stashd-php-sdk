@@ -21,6 +21,11 @@ final class ResourceTable
      * @var array<string, array{type: string, state: string, borrows: array<string, true>}>
      */
     private array $entries = [];
+    /**
+     * Active borrowed resource IDs indexed by the outstanding call.
+     * @var array<string, array<string, true>>
+     */
+    private array $borrowed = [];
 
     /**
      * Cleanup permanently closes this ledger, including otherwise live handles.
@@ -100,6 +105,7 @@ final class ResourceTable
     {
         $this->requireOwned($invocation, $id, $type);
         $this->entries[$id]['borrows'][$call] = true;
+        $this->borrowed[$call][$id] = true;
     }
 
     /**
@@ -119,9 +125,10 @@ final class ResourceTable
      */
     public function endCall(string $call): void
     {
-        foreach ($this->entries as &$entry) {
-            unset($entry['borrows'][$call]);
+        foreach ($this->borrowed[$call] ?? [] as $id => $_) {
+            unset($this->entries[$id]['borrows'][$call]);
         }
+        unset($this->borrowed[$call]);
     }
 
     /**

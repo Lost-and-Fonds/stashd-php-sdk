@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Contract\InputPlugin;
 
 use Stashd\PluginSdk\Contract\InputHost\DiscoveredItem;
-use Stashd\PluginSdk\Contract\InputHost\InputDelegation;
+use Stashd\PluginSdk\Contract\InputHost\Source;
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 
 /**
@@ -14,20 +14,19 @@ use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 interface Plugin
 {
     /**
-     * Run resolve with the supplied values.
-     * @param list<SourceValue> $source
-     * @param list<CredentialBinding> $credentials
-     * @return ResolvedInput|PluginError
+     * Run can resolve with the supplied values.
+     * @param Source $source
+     * @return bool
      */
-    public function resolve(array $source, array $credentials): ResolvedInput|PluginError;
+    public function canResolve(Source $source): bool;
 
     /**
-     * Run resolve delegation with the supplied values.
-     * @param InputDelegation $delegation
+     * Run resolve with the supplied values.
+     * @param Source $source
      * @param list<CredentialBinding> $credentials
      * @return ResolvedInput|PluginError
      */
-    public function resolveDelegation(InputDelegation $delegation, array $credentials): ResolvedInput|PluginError;
+    public function resolve(Source $source, array $credentials): ResolvedInput|PluginError;
 
     /**
      * Run discover with the supplied values.

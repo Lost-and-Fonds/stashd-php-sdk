@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stashd\PluginSdk\Runtime\Codec;
 
+use LengthException;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use stdClass;
 
@@ -105,6 +106,29 @@ final class FrameChannel
     /**
      * Transmit a complete frame only after verifying actual encoded size against the peer maximum.
      */
+    public function sendMaximum(): int
+    {
+        return $this->sendMaximum;
+    }
+
+    /**
+     * Encode a candidate without changing channel usability on oversize.
+     */
+    public function prepare(stdClass $frame): string
+    {
+        $this->assertUsable();
+        $payload = Json::encode($frame);
+
+        if (strlen($payload) > $this->sendMaximum) {
+            throw new LengthException('Outbound payload exceeds peer receive maximum');
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Encode and transmit one complete frame.
+     */
     public function write(stdClass $frame): void
     {
         $this->assertUsable();
@@ -121,6 +145,19 @@ final class FrameChannel
             $this->fail('Outbound payload exceeds peer receive maximum');
         }
 
+        $this->writePrepared($payload);
+    }
+
+    /**
+     * Transmit the exact validated payload without encoding it again.
+     */
+    public function writePrepared(string $payload): void
+    {
+        $this->assertUsable();
+
+        if ($payload === '' || strlen($payload) > $this->sendMaximum) {
+            $this->fail('Prepared payload exceeds peer receive maximum');
+        }
         $bytes = pack('N', strlen($payload)) . $payload;
         $offset = 0;
 

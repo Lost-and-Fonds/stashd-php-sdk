@@ -7,6 +7,7 @@ namespace Stashd\PluginSdk;
 use InvalidArgumentException;
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
 use Stashd\PluginSdk\Contract\IoHost\CredentialReference;
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
 use Stashd\PluginSdk\Helper\Credential;
 use Stashd\PluginSdk\Helper\Process;
 use Stashd\PluginSdk\Helper\Stream;
@@ -18,7 +19,7 @@ use Stashd\PluginSdk\Runtime\Resource\RemoteStagingArea;
 /**
  * Run helper tools and create temporary output for the current plugin call.
  */
-final class Helpers
+final readonly class Tools
 {
     /**
      * Create the helper API for one plugin call.
@@ -26,25 +27,13 @@ final class Helpers
      * @param list<Credential> $credentials Credentials available for this call.
      */
     public function __construct(
-        private readonly Invocation $invocation,
-        /**
-         * @var list<Credential>
-         */
-        private readonly array $credentials = [],
+        private Invocation $invocation,
+        public array       $credentials = [],
     ) {}
 
     /**
-     * Return the credentials this plugin call may pass to helpers.
-     * @return list<Credential>
-     */
-    public function credentials(): array
-    {
-        return $this->credentials;
-    }
-
-    /**
      * Start a helper tool. Arguments are passed directly, without a shell.
-     * Pass only credentials returned by credentials(); the host supplies their secret values.
+     * Pass only credentials from $this->credentials; the host supplies their secret values.
      * @param list<string> $args
      * @param list<Credential> $credentials
      */
@@ -60,7 +49,10 @@ final class Helpers
             $bindings[] = new CredentialBinding($credential->name, new CredentialReference($credential->reference));
         }
 
-        return new Process(HelperProcessCall::start($this->invocation, $name, $args, $input?->transfer(), $output?->transfer(), $bindings));
+        return new Process(HelperProcessCall::start($this->invocation, $name, $args, $input?->transfer(), $output?->transfer(), $bindings, static function () use ($input, $output): void {
+            $input?->consume();
+            $output?->consume();
+        }));
     }
 
     /**
@@ -69,7 +61,7 @@ final class Helpers
     public function stage(?string $mediaType = null): Writer
     {
         $area = $this->invocation->typedCall(
-            'stashd:plugin/io-host.open-staging-area',
+            IoHostMethod::OpenStagingArea,
             [],
             [],
             ['kind' => 'named', 'name' => 'staging-area'],

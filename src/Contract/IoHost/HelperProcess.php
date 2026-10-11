@@ -18,9 +18,10 @@ interface HelperProcess
     /**
      * Wait for accepted output or activity, then one terminal event, then sticky EOF.
      * Ordinary host failures are distinct from protocol violations.
-     * @return HelperEvent|null
+     * @param int $waitMs
+     * @return HelperPollResult
      */
-    public function nextEvent(): ?HelperEvent;
+    public function nextEvent(int $waitMs): HelperPollResult;
 
     /**
      * Request cancellation; repeated requests do nothing, and an earlier outcome takes priority.

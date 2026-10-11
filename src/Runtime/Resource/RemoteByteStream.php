@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime\Resource;
 
 use Stashd\PluginSdk\Contract\IoHost\ByteStream;
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\Values;
 use Stashd\PluginSdk\Runtime\HostFailure;
@@ -57,7 +58,7 @@ final class RemoteByteStream implements ByteStream, OwnedResource
     {
         $type = 'stashd:plugin/io-host.byte-stream';
         $this->invocation->resources->requireOwned($this->invocation->id, $this->id, $type);
-        $result = $this->invocation->call('stashd:plugin/io-host.byte-stream.read', (object) [
+        $result = $this->invocation->call(IoHostMethod::ByteStreamRead, (object) [
             'self' => (object) ['$resource' => (object) ['type' => $type, 'id' => $this->id]],
         ]);
 
@@ -66,12 +67,12 @@ final class RemoteByteStream implements ByteStream, OwnedResource
         }
 
         if (property_exists($result, 'error')) {
-            Values::record($result, ['error']);
+            $this->invocation->decode(static fn() => Values::record($result, ['error']));
 
-            throw new HostFailure(IoHostCodec::decodeStreamError($result->error));
+            throw new HostFailure($this->invocation->decode(static fn() => IoHostCodec::decodeStreamError($result->error)));
         }
 
-        Values::record($result, ['ok']);
+        $this->invocation->decode(static fn() => Values::record($result, ['ok']));
 
         if ($result->ok === null) {
             $this->eof = true;
@@ -79,7 +80,7 @@ final class RemoteByteStream implements ByteStream, OwnedResource
             return null;
         }
 
-        $chunk = Values::list($result->ok);
+        $chunk = $this->invocation->decode(static fn() => Values::list($result->ok));
 
         if ($chunk === [] || $this->eof) {
             $this->invocation->violate('Stream returned empty non-EOF chunk or bytes after EOF');

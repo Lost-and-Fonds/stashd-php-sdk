@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Stashd\PluginSdk\Contract\InputPlugin;
+namespace Stashd\PluginSdk\Contract\InputHost;
 
 /**
  * The text form of option value.

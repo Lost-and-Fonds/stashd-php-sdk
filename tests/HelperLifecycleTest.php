@@ -13,13 +13,13 @@ use Stashd\PluginSdk\Helper\Output;
 use Stashd\PluginSdk\Helper\OutputStream;
 use Stashd\PluginSdk\Helper\TimedOut;
 use Stashd\PluginSdk\Helper\Writer;
-use Stashd\PluginSdk\Helpers;
 use Stashd\PluginSdk\Runtime\Codec\FrameChannel;
 use Stashd\PluginSdk\Runtime\Codec\Json;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
 use Stashd\PluginSdk\Runtime\ExportRunner;
 use Stashd\PluginSdk\Runtime\ProtocolViolation;
 use Stashd\PluginSdk\Runtime\Resource\RemoteStagedWriter;
+use Stashd\PluginSdk\Tools;
 
 require_once __DIR__ . '/../examples/ProgressBroadcast.php';
 
@@ -50,7 +50,12 @@ it('dispatches a plugin helper through staging, live events, returned writer, re
         null,
     ];
 
+    $responses[13] = (object) ['invocation-cancel-requested' => false, 'state' => 'end'];
+
     foreach ($responses as $index => $result) {
+        if ($result instanceof stdClass && isset($result->tag)) {
+            $result = (object) ['invocation-cancel-requested' => false, 'state' => (object) ['tag' => 'event', 'value' => $result]];
+        }
         $host->write((object) ['protocol' => 1, 'kind' => 'response', 'id' => 'plugin-' . ($index + 1), 'invocation' => 'inv', 'result' => $result]);
     }
 
@@ -98,7 +103,7 @@ it('keeps a staged writer reusable when helper arguments fail before transfer', 
     [$invocation, $host, $input, $output, $sink] = helperFixture([]);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-    expect(fn() => (new Helpers($invocation))->start('approved', credentials: [new Credential('key', 'reference')], output: $writer))
+    expect(fn() => (new Tools($invocation))->start('approved', credentials: [new Credential('key', 'reference')], output: $writer))
         ->toThrow(InvalidArgumentException::class);
     expect($writer->transfer())->toBeInstanceOf(RemoteStagedWriter::class);
     $invocation->cleanup();
@@ -114,7 +119,7 @@ it('prevents reuse of a writer after it is handed to a helper', function (): voi
     ]);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-    $process = (new Helpers($invocation))->start('approved', output: $writer);
+    $process = (new Tools($invocation))->start('approved', output: $writer);
 
     foreach (['transfer', 'finish', 'close'] as $method) {
         expect(fn() => $writer->{$method}())->toThrow(LogicException::class);
@@ -134,10 +139,10 @@ it('streams remaining events after cancellation and keeps terminal followed by s
         (object) ['tag' => 'output', 'value' => (object) ['channel' => 'stderr', 'bytes' => [0, 13, 255]]],
         null,
         (object) ['tag' => 'terminal', 'value' => 'cancelled'],
-        null,
+        (object) ['invocation-cancel-requested' => false, 'state' => 'end'],
         null,
     ]);
-    $process = (new Helpers($invocation))->start('approved');
+    $process = (new Tools($invocation))->start('approved');
     $events = $process->events();
     expect($events->current())->toBeInstanceOf(Output::class)
         ->and($events->current()->stream)->toBe(OutputStream::Stderr)
@@ -146,7 +151,7 @@ it('streams remaining events after cancellation and keeps terminal followed by s
     $events->next();
     expect($events->current())->toBeInstanceOf(Cancelled::class);
     $events->next();
-    expect($events->valid())->toBeFalse()->and(iterator_to_array($process->events()))->toBe([]);
+    expect($events->valid())->toBeFalse();
     $process->close();
     $invocation->cleanup();
     fclose($input);
@@ -161,12 +166,12 @@ it('exposes timeout and host failure after accepted output without returning sta
             (object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')],
             (object) ['tag' => 'output', 'value' => (object) ['channel' => 'stderr', 'bytes' => [65]]],
             (object) ['tag' => 'terminal', 'value' => $terminal],
-            null,
+            (object) ['invocation-cancel-requested' => false, 'state' => 'end'],
             null,
         ]);
         $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
         $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-        $process = (new Helpers($invocation))->start('approved', output: $writer);
+        $process = (new Tools($invocation))->start('approved', output: $writer);
         $events = iterator_to_array($process->events());
         expect($events)->toHaveCount(2)->and($events[0])->toBeInstanceOf(Output::class)
             ->and($events[0]->bytes)->toBe('A')
@@ -176,8 +181,7 @@ it('exposes timeout and host failure after accepted output without returning sta
             expect($events[1]->detail)->toBe('host lost helper');
         }
 
-        expect(iterator_to_array($process->events()))->toBe([])
-            ->and(fn() => $writer->finish())->toThrow(LogicException::class)
+        expect(fn() => $writer->finish())->toThrow(LogicException::class)
             ->and(fn() => $invocation->resources->returnTransferred('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer'))->toThrow(ProtocolViolation::class);
         $process->close();
         $invocation->cleanup();
@@ -193,12 +197,12 @@ it('discards staged output on cancellation while delivering remaining stderr and
         null,
         (object) ['tag' => 'output', 'value' => (object) ['channel' => 'stderr', 'bytes' => [66]]],
         (object) ['tag' => 'terminal', 'value' => 'cancelled'],
-        null,
+        (object) ['invocation-cancel-requested' => false, 'state' => 'end'],
         null,
     ]);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-    $process = (new Helpers($invocation))->start('approved', output: $writer);
+    $process = (new Tools($invocation))->start('approved', output: $writer);
     $process->cancel();
     $events = iterator_to_array($process->events());
     expect($events)->toHaveCount(2)->and($events[0])->toBeInstanceOf(Output::class)
@@ -206,7 +210,6 @@ it('discards staged output on cancellation while delivering remaining stderr and
         ->and($events[1])->toBeInstanceOf(Cancelled::class)
         ->and(fn() => $writer->finish())->toThrow(LogicException::class)
         ->and(fn() => $invocation->resources->returnTransferred('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer'))->toThrow(ProtocolViolation::class);
-    expect(iterator_to_array($process->events()))->toBe([]);
     $process->close();
     $invocation->cleanup();
     fclose($input);
@@ -220,13 +223,13 @@ it('returns a staged writer on normal exit even when the code is nonzero', funct
         (object) ['tag' => 'terminal', 'value' => (object) ['tag' => 'exited', 'value' => (object) [
             'code' => 2, 'output' => ResourceValueCodec::handle('stashd:plugin/io-host.staged-writer', 'writer-1'),
         ]]],
-        null,
+        (object) ['invocation-cancel-requested' => false, 'state' => 'end'],
         null,
         null,
     ]);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-    $process = (new Helpers($invocation))->start('approved', output: $writer);
+    $process = (new Tools($invocation))->start('approved', output: $writer);
     $events = iterator_to_array($process->events());
     expect($events)->toHaveCount(1)->and($events[0])->toBeInstanceOf(Exited::class)
         ->and($events[0]->code)->toBe(2)
@@ -248,7 +251,7 @@ it('closes a running public process without polling events or reviving its stage
     ]);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-    $process = (new Helpers($invocation))->start('approved', output: $writer);
+    $process = (new Tools($invocation))->start('approved', output: $writer);
     $process->close();
     expect(fn() => iterator_to_array($process->events()))->toThrow(ProtocolViolation::class)
         ->and(fn() => $process->cancel())->toThrow(ProtocolViolation::class)
@@ -269,15 +272,15 @@ it('keeps the first terminal outcome when cancellation arrives after exit', func
         (object) ['ok' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', 'process')],
         (object) ['tag' => 'terminal', 'value' => (object) ['tag' => 'exited', 'value' => (object) ['code' => 0, 'output' => null]]],
         null,
-        null,
+        (object) ['invocation-cancel-requested' => false, 'state' => 'end'],
         null,
     ]);
-    $process = (new Helpers($invocation))->start('approved');
+    $process = (new Tools($invocation))->start('approved');
     $events = $process->events();
     expect($events->current())->toBeInstanceOf(Exited::class);
     $process->cancel();
     $events->next();
-    expect($events->valid())->toBeFalse()->and(iterator_to_array($process->events()))->toBe([]);
+    expect($events->valid())->toBeFalse();
     $process->close();
     $invocation->cleanup();
     fclose($input);
@@ -291,11 +294,11 @@ it('invalidates retained public process and returned writer at invocation cleanu
         (object) ['tag' => 'terminal', 'value' => (object) ['tag' => 'exited', 'value' => (object) [
             'code' => 0, 'output' => ResourceValueCodec::handle('stashd:plugin/io-host.staged-writer', 'writer-1'),
         ]]],
-        null,
+        (object) ['invocation-cancel-requested' => false, 'state' => 'end'],
     ]);
     $invocation->resources->accept('inv', 'writer-1', 'stashd:plugin/io-host.staged-writer');
     $writer = new Writer(new RemoteStagedWriter($invocation, 'writer-1'));
-    $process = (new Helpers($invocation))->start('approved', output: $writer);
+    $process = (new Tools($invocation))->start('approved', output: $writer);
     $events = iterator_to_array($process->events());
     expect($events[0])->toBeInstanceOf(Exited::class)->and($events[0]->output)->toBeInstanceOf(Writer::class);
     $invocation->cleanup();

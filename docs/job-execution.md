@@ -2,7 +2,7 @@
 
 This note records the execution model expected by the PHP SDK developer tools and by Stashd Core.
 
-It does not change the frozen `stashd:plugin@0.18.0` wire contract. Where the contract is more specific, the contract wins.
+It does not change the frozen `stashd:plugin@0.19.0` wire contract. Where the contract is more specific, the contract wins.
 
 ## One invocation is one bounded piece of work
 

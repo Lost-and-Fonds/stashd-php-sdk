@@ -16,7 +16,7 @@ final readonly class DiscoveredItem
      *
      * @param string $id Stable item identity used when the host requests acquisition.
      * @param string $reference Opaque value the plugin uses to retrieve the item; preserved exactly.
-     * @param InputDelegation|null $delegation Optional opaque handoff reference for another Input plugin.
+     * @param Source|null $source Optional source to route through the normal Input lifecycle.
      * @param string|null $sizeBytes Optional known or estimated total item size in bytes.
      * @param bool $sizeEstimated Whether the supplied item size is an estimate.
      * @param list<PluginMetadata> $metadata Plugin-owned metadata facets associated with this item.
@@ -24,7 +24,7 @@ final readonly class DiscoveredItem
     public function __construct(
         public string $id,
         public string $reference,
-        public ?InputDelegation $delegation,
+        public ?Source $source,
         public ?string $sizeBytes,
         public bool $sizeEstimated,
         public array $metadata,

@@ -9,11 +9,16 @@ use Stashd\PluginSdk\Contract\IoHost\HelperEventOutput;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventStdoutActivity;
 use Stashd\PluginSdk\Contract\IoHost\HelperEventTerminal;
 use Stashd\PluginSdk\Contract\IoHost\HelperOutputStream;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollResult;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollStateEnd;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollStateEvent;
+use Stashd\PluginSdk\Contract\IoHost\HelperPollStatePending;
 use Stashd\PluginSdk\Contract\IoHost\HelperProcess;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalCancelled;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalExited;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalFailed;
 use Stashd\PluginSdk\Contract\IoHost\HelperTerminalTimedOut;
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
 use Stashd\PluginSdk\Runtime\Invocation;
@@ -78,29 +83,39 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
     /**
      * Wait for the next accepted event, then a terminal event, then sticky EOF.
      */
-    public function nextEvent(): ?HelperEvent
+    public function nextEvent(int $waitMs = 1000): HelperPollResult
     {
         $this->resourceId($this->invocation->resources, $this->invocation->id, 'stashd:plugin/io-host.helper-process');
 
-        if ($this->eof) {
-            return null;
-        }
-
-        $event = $this->invocation->typedCall('stashd:plugin/io-host.helper-process.next-event', [
-            'self' => $this,
-        ], ['self' => ['kind' => 'borrow', 'value' => ['kind' => 'named', 'name' => 'helper-process']]], [
-            'kind' => 'option', 'value' => ['kind' => 'named', 'name' => 'helper-event'],
+        $poll = $this->invocation->typedCall(IoHostMethod::HelperProcessNextEvent, [
+            'self' => $this, 'wait-ms' => $waitMs,
+        ], ['self' => ['kind' => 'borrow', 'value' => ['kind' => 'named', 'name' => 'helper-process']], 'wait-ms' => ['kind' => 'scalar', 'name' => 'u32']], [
+            'kind' => 'named', 'name' => 'helper-poll-result',
         ], 'io-host', $this->writerId);
 
-        if ($event === null) {
+        if (!$poll instanceof HelperPollResult) {
+            $this->invocation->violate('Expected helper poll result');
+        }
+        $this->invocation->observeCancellation($poll->invocationCancelRequested);
+
+        if ($poll->state instanceof HelperPollStatePending) {
+            if ($this->terminal || $this->eof) {
+                $this->invocation->violate('Pending after helper terminal');
+            }
+
+            return $poll;
+        }
+
+        if ($poll->state instanceof HelperPollStateEnd) {
             if (!$this->terminal) {
                 $this->invocation->violate('Helper process reached EOF before terminal');
             }
 
             $this->eof = true;
 
-            return null;
+            return $poll;
         }
+        $event = $poll->state instanceof HelperPollStateEvent ? $poll->state->value : null;
 
         if (!$event instanceof HelperEvent || $this->terminal) {
             $this->invocation->violate('Helper process emitted invalid event after terminal');
@@ -161,7 +176,7 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
             ]);
         }
 
-        return $event;
+        return $poll;
     }
 
     /**
@@ -171,7 +186,7 @@ final class RemoteHelperProcess implements HelperProcess, OwnedResource
     {
         $this->resourceId($this->invocation->resources, $this->invocation->id, 'stashd:plugin/io-host.helper-process');
         $this->invocation->trace(TraceLevel::Ludicrous, 'helper.cancel', ['resource-id' => $this->id]);
-        $result = $this->invocation->call('stashd:plugin/io-host.helper-process.cancel', (object) [
+        $result = $this->invocation->call(IoHostMethod::HelperProcessCancel, (object) [
             'self' => ResourceValueCodec::handle('stashd:plugin/io-host.helper-process', $this->id),
         ]);
 

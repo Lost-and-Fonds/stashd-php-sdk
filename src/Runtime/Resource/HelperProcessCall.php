@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Stashd\PluginSdk\Runtime\Resource;
 
 use Stashd\PluginSdk\Contract\IoHost\CredentialBinding;
+use Stashd\PluginSdk\Contract\IoHost\IoHostMethod;
 use Stashd\PluginSdk\Diagnostics\TraceLevel;
 use Stashd\PluginSdk\Runtime\Codec\Generated\IoHostCodec;
 use Stashd\PluginSdk\Runtime\Codec\ResourceValueCodec;
@@ -24,9 +25,9 @@ final class HelperProcessCall
      * @param list<string> $args
      * @param list<CredentialBinding> $credentials
      */
-    public static function start(Invocation $invocation, string $name, array $args, ?OwnedResource $input, ?RemoteStagedWriter $output, array $credentials): RemoteHelperProcess
+    public static function start(Invocation $invocation, string $name, array $args, ?OwnedResource $input, ?RemoteStagedWriter $output, array $credentials, ?callable $committed = null): RemoteHelperProcess
     {
-        $invocation->trace(TraceLevel::Ludicrous, 'helper.start', ['method' => 'stashd:plugin/io-host.start-helper']);
+        $invocation->trace(TraceLevel::Ludicrous, 'helper.start', ['method' => IoHostMethod::StartHelper->value]);
         $transfers = [];
         $inputType = ['kind' => 'option', 'value' => ['kind' => 'named', 'name' => 'byte-stream']];
         $outputType = ['kind' => 'option', 'value' => ['kind' => 'named', 'name' => 'staged-writer']];
@@ -44,7 +45,7 @@ final class HelperProcessCall
             }, Values::list($credentials)),
         ];
         $writerId = $output?->resourceId($invocation->resources, $invocation->id, 'stashd:plugin/io-host.staged-writer');
-        $result = $invocation->call('stashd:plugin/io-host.start-helper', $params, $transfers);
+        $result = $invocation->call(IoHostMethod::StartHelper, $params, $transfers, $committed);
 
         try {
             if (!$result instanceof stdClass) {
